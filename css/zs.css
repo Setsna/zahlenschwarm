@@ -147,7 +147,17 @@ button.bereich:active { transform: scale(0.97); }
 .rt--uebt { background: linear-gradient(90deg, rgba(255, 255, 255, 0.85) 50%, transparent 50%); }
 .gemischt { width: 100%; min-height: calc(150 * var(--s)); margin-top: calc(28 * var(--s)); }
 button.gemischt { border: 3px solid var(--tupfi); }
-.heute { text-align: center; align-items: center; border: 3px solid var(--tupfi); }
+/* Heute bereit für dich: schlanke Leiste, damit die Bereiche darunter sichtbar bleiben (Ingo, 11.11.2026) */
+.heute { border: 3px solid var(--tupfi); border-radius: calc(36 * var(--s)); padding: calc(20 * var(--s)) calc(32 * var(--s)); gap: calc(10 * var(--s)); text-align: center; align-items: center; }
+.heute h2 { font-size: max(19px, calc(30 * var(--s))); }
+.heute p { margin: 0; }
+.heute .knopf { min-height: var(--ziel); }
+@media (min-width: 640px) {
+  .heute { display: grid; grid-template-columns: 1fr auto; column-gap: calc(28 * var(--s)); row-gap: .15em; text-align: left; align-items: center; }
+  .heute h2 { grid-column: 1; }
+  .heute p:not(:last-child) { grid-column: 1; }
+  .heute p:last-child { grid-column: 2; grid-row: 1 / span 2; }
+}
 
 /* ---------- Für Lehrkräfte und Eltern ---------- */
 .erwachsene { padding: 0; gap: 0; }
