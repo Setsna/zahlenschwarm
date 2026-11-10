@@ -145,17 +145,19 @@
     app.querySelector('.aufgabe-fenster').classList.add(richtig ? 'ist-richtig' : 'ist-fast');
 
     const erkl = A.erklaerung(auf);
+    /* Jeder Block ein Absatz, jede Zeile für sich (Zeilen mit ":" am Ende sind Überleitungen) */
+    const block = zeilen => `<div class="weg-block">${zeilen.map(l => `<p class="${/:$/.test(l) ? 'weg-ueber' : ''}">${mitRechnungen(l)}</p>`).join('')}</div>`;
     if (richtig && zuegig) {
       rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p>`, `Richtig! ${auf.text} = ${auf.loesung}.`);
       z.weiterTimer = setTimeout(naechste, C.pauseNachRichtigSek * 1000);
     } else if (richtig) {
-      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p><p class="rueck__weg">So geht es noch schneller: ${mitRechnungen(erkl[0])}</p>${weiterKnopf()}`,
-        `Richtig! So geht es noch schneller: ${erkl[0]}`);
+      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p><div class="rueck__weg"><p class="weg-ueber">So geht es noch schneller:</p>${block(erkl[0])}</div>${weiterKnopf()}`,
+        `Richtig! So geht es noch schneller: ${A.erklaerungText([erkl[0]])}`);
       fokusWeiter();
       z.weiterTimer = setTimeout(naechste, C.pauseNachLangsamSek * 1000);
     } else {
-      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><ul class="rueck__weg">${erkl.map(t => `<li>${mitRechnungen(t)}</li>`).join('')}</ul>${weiterKnopf()}`,
-        `Fast! ${auf.text} = ${auf.loesung}. ${erkl.join(' ')}`);
+      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><div class="rueck__weg">${erkl.map(block).join('')}</div>${weiterKnopf()}`,
+        `Fast! ${auf.text} = ${auf.loesung}. ${A.erklaerungText(erkl)}`);
       fokusWeiter();
     }
   }

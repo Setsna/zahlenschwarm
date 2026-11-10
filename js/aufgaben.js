@@ -47,41 +47,48 @@
   }
 
   /* ---------- Erklärungen (nach einer falschen oder langsamen Antwort) ---------- */
-  /* Rechenweg über Kernaufgaben (mal 1, 2, 5, 10). Jede Zeile enthält nur Rechnungen,
-     die der Test nachrechnet. */
+  /* Jede Erklärung besteht aus Blöcken, jeder Block aus Zeilen. Jeder Gedankenschritt steht
+     in einer eigenen Zeile, ohne Punkt am Ende (Ingo, 10.11.2026):
+       8 · 2 heißt:
+       8 und noch einmal 8
+       8 + 8 = 16
+     Rechenweg über Kernaufgaben (mal 1, 2, 5, 10). Der Test rechnet jede Rechnung nach. */
   function kernweg(a, b) {
     const p = a * b;
     switch (a) {
-      case 1: return `1 ${MAL} ${b} = ${b}. Mal 1 bleibt die Zahl gleich.`;
-      case 2: return `2 ${MAL} ${b} heißt: ${b} und noch einmal ${b}. ${b} + ${b} = ${p}.`;
-      case 3: return `2 ${MAL} ${b} = ${2 * b}. Noch einmal ${b} dazu: ${2 * b} + ${b} = ${p}.`;
-      case 4: return `2 ${MAL} ${b} = ${2 * b}. Das Doppelte davon: ${2 * b} + ${2 * b} = ${p}.`;
-      case 5: return `10 ${MAL} ${b} = ${10 * b}. Die Hälfte davon: ${10 * b} ${GETEILT} 2 = ${p}.`;
-      case 6: return `5 ${MAL} ${b} = ${5 * b}. Noch einmal ${b} dazu: ${5 * b} + ${b} = ${p}.`;
-      case 7: return `5 ${MAL} ${b} = ${5 * b} und 2 ${MAL} ${b} = ${2 * b}. Zusammen: ${5 * b} + ${2 * b} = ${p}.`;
-      case 8: return `10 ${MAL} ${b} = ${10 * b} und 2 ${MAL} ${b} = ${2 * b}. Nimm 2 ${MAL} ${b} weg: ${10 * b} ${MINUS} ${2 * b} = ${p}.`;
-      case 9: return `10 ${MAL} ${b} = ${10 * b}. Einmal ${b} weniger: ${10 * b} ${MINUS} ${b} = ${p}.`;
-      case 10: return `10 ${MAL} ${b} heißt: ${b} Zehner. Das sind ${p}.`;
-      default: return `${a} ${MAL} ${b} = ${p}.`;
+      case 1: return [`1 ${MAL} ${b} = ${b}`, 'Mal 1 bleibt die Zahl gleich'];
+      case 2: return [`2 ${MAL} ${b} heißt:`, `${b} und noch einmal ${b}`, `${b} + ${b} = ${p}`];
+      case 3: return [`2 ${MAL} ${b} = ${2 * b}`, `Noch einmal ${b} dazu:`, `${2 * b} + ${b} = ${p}`];
+      case 4: return [`2 ${MAL} ${b} = ${2 * b}`, 'Das Doppelte davon:', `${2 * b} + ${2 * b} = ${p}`];
+      case 5: return [`10 ${MAL} ${b} = ${10 * b}`, 'Die Hälfte davon:', `${10 * b} ${GETEILT} 2 = ${p}`];
+      case 6: return [`5 ${MAL} ${b} = ${5 * b}`, `Noch einmal ${b} dazu:`, `${5 * b} + ${b} = ${p}`];
+      case 7: return [`5 ${MAL} ${b} = ${5 * b}`, `2 ${MAL} ${b} = ${2 * b}`, 'Zusammen:', `${5 * b} + ${2 * b} = ${p}`];
+      case 8: return [`10 ${MAL} ${b} = ${10 * b}`, `2 ${MAL} ${b} = ${2 * b}`, `Nimm 2 ${MAL} ${b} weg:`, `${10 * b} ${MINUS} ${2 * b} = ${p}`];
+      case 9: return [`10 ${MAL} ${b} = ${10 * b}`, `Einmal ${b} weniger:`, `${10 * b} ${MINUS} ${b} = ${p}`];
+      case 10: return [`10 ${MAL} ${b} heißt:`, `${b} Zehner`, `Das sind ${p}`];
+      default: return [`${a} ${MAL} ${b} = ${p}`];
     }
   }
 
-  /* Gibt die Zeilen der Erklärung zurück. Die erste Zeile ist immer der wichtigste Weg. */
+  /* Gibt die Blöcke der Erklärung zurück. Der erste Block ist immer der wichtigste Weg. */
   function erklaerung(aufgabe) {
     const { a, b, loesung: p } = aufgabe;
-    const zeilen = [];
+    const bloecke = [];
     if (b === 2 && a !== 2) {
       /* 2er-Reihe: Verdoppeln ist der leichteste Weg */
-      zeilen.push(`${a} ${MAL} 2 heißt: ${a} und noch einmal ${a}. ${a} + ${a} = ${p}.`);
+      bloecke.push([`${a} ${MAL} 2 heißt:`, `${a} und noch einmal ${a}`, `${a} + ${a} = ${p}`]);
       /* 4 · 2 über die Nachbaraufgabe 5 · 2, sonst wäre das "Oder" nur noch einmal Verdoppeln */
-      if (a === 4) zeilen.push(`Oder: 5 ${MAL} 2 = 10. Einmal 2 weniger: 10 ${MINUS} 2 = ${p}.`);
-      else if ([6, 7, 8, 9].includes(a)) zeilen.push(`Oder: ${kernweg(a, b)}`);
+      if (a === 4) bloecke.push(['Oder:', `5 ${MAL} 2 = 10`, 'Einmal 2 weniger:', `10 ${MINUS} 2 = ${p}`]);
+      else if ([6, 7, 8, 9].includes(a)) bloecke.push(['Oder:', ...kernweg(a, b)]);
     } else {
-      zeilen.push(kernweg(a, b));
+      bloecke.push(kernweg(a, b));
     }
-    if (a !== b) zeilen.push(`Tauschaufgabe: ${b} ${MAL} ${a} = ${p}.`);
-    return zeilen;
+    if (a !== b) bloecke.push(['Tauschaufgabe:', `${b} ${MAL} ${a} = ${p}`]);
+    return bloecke;
   }
+
+  /* Eine Erklärung als Fließtext (für Screenreader-Ansage) */
+  const erklaerungText = bloecke => bloecke.map(z => z.join(' ')).join('. ');
 
   /* ---------- Tipps von Tupfi (gestuft, ohne Lösung) ---------- */
   const schwarmText = (a, b) => `${a} ${a === 1 ? 'Schwarm' : 'Schwärme'} mit je ${b} ${b === 1 ? 'Fisch' : 'Fischen'}.`;
@@ -140,5 +147,5 @@
     return Number(t) === aufgabe.loesung;
   }
 
-  ZS.aufgaben = { MAL, mal, reihe, ausId, mischen, runde, erklaerung, tipps, pruefen };
+  ZS.aufgaben = { MAL, mal, reihe, ausId, mischen, runde, erklaerung, erklaerungText, tipps, pruefen };
 })();
