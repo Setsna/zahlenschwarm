@@ -184,8 +184,9 @@ body.uebt .fuss { display: none; }
 @media (orientation: landscape) and (min-width: 820px) {
   .ueben__flaeche { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
 }
-.aufgabe-fenster { width: 100%; align-items: center; text-align: center; min-height: calc(300 * var(--s)); justify-content: center; }
-.aufgabe { font-family: var(--ziffern); font-weight: 700; font-size: max(44px, calc(120 * var(--s))); line-height: 1.1; display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: .3em; font-variant-numeric: lining-nums tabular-nums; }
+.aufgabe-fenster { width: 100%; align-items: center; text-align: center; min-height: calc(300 * var(--s)); justify-content: center; container-type: inline-size; }
+/* Aufgabe immer in einer Zeile: Schrift höchstens 120 Entwurfspixel, sonst so groß, dass "10 · 10 = 100" ins Fenster passt */
+.aufgabe { font-family: var(--ziffern); font-weight: 700; font-size: max(32px, min(calc(120 * var(--s)), 12cqi)); line-height: 1.1; display: flex; align-items: baseline; justify-content: center; flex-wrap: nowrap; white-space: nowrap; gap: .3em; font-variant-numeric: lining-nums tabular-nums; }
 .eingabe { min-width: 2.2ch; padding: 0 .2em; border-bottom: 4px solid var(--tupfi); color: var(--weiss); }
 .eingabe.leer { color: rgba(255, 255, 255, 0.55); }
 .ist-richtig .eingabe { border-color: #7fe3b8; }
