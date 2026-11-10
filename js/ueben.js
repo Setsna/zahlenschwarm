@@ -30,27 +30,30 @@
 
   /* ---------- Bild für Tipp 2: a Schwärme mit je b Fischen, als Punktefeld ---------- */
   /* Jede Spalte ist ein Schwarm (so bleibt das Bild flach und das Ziffernfeld sichtbar).
-     Nach 5 Schwärmen und nach 5 Fischen eine kleine Lücke (Fünferstruktur). */
+     Jeder Schwarm hat einen zarten Hintergrund, damit man Spalten liest und nicht Zeilen (Design-Review).
+     Nach 5 Schwärmen und nach 5 Fischen eine kleine Lücke (Fünferstruktur).
+     Breite und Höhe begrenzt das CSS (hochkant niedriger, an der Tafel größer). */
   function schwarmBild(a, b, label = null) {
     const dx = 30, dy = 15, luecke = 12;
     const x = i => 17 + i * dx + (i >= 5 ? luecke : 0);
     const y = j => 9 + j * dy + (j >= 5 ? luecke : 0);
-    const breite = x(a - 1) + 14, hoehe = y(b - 1) + 9;
-    let fische = '';
+    const breite = x(a - 1) + 16, hoehe = y(b - 1) + 11;
+    let svg = '';
     for (let i = 0; i < a; i++) {
+      svg += `<rect class="sb-schwarm" x="${x(i) - 15}" y="1" width="27" height="${hoehe - 2}" rx="10"/>`;
       for (let j = 0; j < b; j++) {
-        fische += `<g transform="translate(${x(i)} ${y(j)})"><path d="M-9 0 L-15 -5 L-15 5 Z" fill="#e0a92a"/><ellipse rx="9" ry="5.5" fill="#f5c842" stroke="#b9821a" stroke-width="1"/><circle cx="4.5" cy="-1" r="1.3" fill="#0b3155"/></g>`;
+        svg += `<g transform="translate(${x(i)} ${y(j)})"><path class="sb-flosse" d="M-9 0 L-15 -5 L-15 5 Z"/><ellipse class="sb-koerper" rx="9" ry="5.5"/><circle class="sb-auge" cx="4.5" cy="-1" r="1.3"/></g>`;
       }
     }
     const beschriftung = label || `${a} ${a === 1 ? 'Schwarm' : 'Schwärme'} mit je ${b} ${b === 1 ? 'Fisch' : 'Fischen'}`;
-    return `<svg class="schwarm-bild" viewBox="0 0 ${breite} ${hoehe}" style="width:min(100%, ${Math.round(breite * 1.6)}px)" role="img" aria-label="${beschriftung}">${fische}</svg>`;
+    return `<svg class="schwarm-bild" viewBox="0 0 ${breite} ${hoehe}" style="--bild-breite:${Math.round(breite * 1.6)}px" role="img" aria-label="${beschriftung}">${svg}</svg>`;
   }
 
   /* ---------- Aufbau der Ansicht ---------- */
   const TASTEN = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'loeschen', '0', 'pruefen'];
   function tasteHtml(t) {
     if (t === 'loeschen') return `<button type="button" class="taste taste--leise" data-u="loeschen" aria-label="Löschen"><svg viewBox="0 0 24 24" width="1.1em" height="1.1em" aria-hidden="true" focusable="false"><path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9l6 6M18 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>`;
-    if (t === 'pruefen') return `<button type="button" class="taste taste--pruefen" data-u="pruefen">Prüfen</button>`;
+    if (t === 'pruefen') return `<button type="button" class="taste taste--pruefen" data-u="pruefen" style="--bedenkzeit:${C.bedenkzeit.sekundenVorPruefen}s"><span>Prüfen</span></button>`;
     return `<button type="button" class="taste" data-u="ziffer" data-z="${t}">${t}</button>`;
   }
 
@@ -71,7 +74,7 @@
       <section class="ueben" aria-labelledby="h-aufgabe">
         <div class="ueben__leiste">
           <button type="button" class="knopf leise-knopf knopf--klein" data-u="zurueck">← Zurück</button>
-          ${z.endlos ? '' : tupfenHtml()}
+          ${z.endlos ? (z.titel ? `<p class="ueben__titel hof">${esc(z.titel)}</p>` : '') : tupfenHtml()}
           <button type="button" class="knopf leise-knopf knopf--klein tipp-knopf" data-u="tipp"><img src="bilder/tupfi.png?b=${C.bildStand}" alt="" width="40" height="40">Tipp</button>
         </div>
         <div class="ueben__flaeche">
@@ -96,8 +99,9 @@
     const knopf = app.querySelector('[data-u="pruefen"]');
     if (!C.bedenkzeit.aktiv) return;
     knopf.disabled = true;
+    knopf.classList.add('wartet');
     clearTimeout(z.bedenkTimer);
-    z.bedenkTimer = setTimeout(() => { if (!z.beantwortet) knopf.disabled = false; }, C.bedenkzeit.sekundenVorPruefen * 1000);
+    z.bedenkTimer = setTimeout(() => { knopf.classList.remove('wartet'); if (!z.beantwortet) knopf.disabled = false; }, C.bedenkzeit.sekundenVorPruefen * 1000);
   }
   const gesperrt = () => C.bedenkzeit.aktiv && performance.now() - z.start < C.bedenkzeit.sekundenVorPruefen * 1000;
 
@@ -199,6 +203,7 @@
       else z.liste.splice(Math.min(z.index + 3, z.liste.length), 0, auf);
     }
     app.querySelectorAll('.ziffernfeld button, [data-u="tipp"]').forEach(b => { b.disabled = true; });
+    app.querySelector('#tipp').hidden = true;
     app.querySelector('.aufgabe-fenster').classList.add(richtig ? 'ist-richtig' : 'ist-fast');
 
     const erkl = A.erklaerung(auf);
@@ -223,7 +228,12 @@
     } else {
       /* Nur der erste Rechenweg (Leitweg), ohne "Oder:" und Tauschaufgabe: Auf dem iPad quer rutschte
          der Weiter-Knopf sonst aus dem Bild (Ingo, 11.11.2026). Zeilenumbrüche bleiben. */
-      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><div class="rueck__weg">${block(erkl[0])}</div>`,
+      /* Die richtige Zahl steht groß in der Aufgabe, die eigene Antwort nur klein darunter (Ingo, 11.11.2026) */
+      const o = app.querySelector('#eingabe');
+      o.textContent = auf.loesung;
+      o.classList.add('ist-loesung');
+      o.setAttribute('aria-label', 'Richtige Lösung');
+      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__eigene">Du hattest ${esc(z.eingabe)}</p><div class="rueck__weg">${block(erkl[0])}</div>`,
         `Fast! ${auf.text} = ${auf.loesung}. ${A.erklaerungText([erkl[0]])}`, weiterKnopf());
       fokusWeiter();
     }
@@ -278,8 +288,8 @@
 
   /* Startet eine Übung. aufgaben: Liste aus ZS.aufgaben. nachschub(): liefert neue Aufgaben (endlos).
      fertig(ergebnisse, abgebrochen) wird bei "Zurück" oder am Ende einer festen Liste gerufen. */
-  function starte({ aufgaben = [], waehler = null, nachschub = null, fertig }) {
-    z = { liste: aufgaben.slice(), index: 0, waehler, nachschub, endlos: !!(waehler || nachschub), fertig,
+  function starte({ aufgaben = [], waehler = null, nachschub = null, fertig, titel = '' }) {
+    z = { liste: aufgaben.slice(), index: 0, waehler, nachschub, endlos: !!(waehler || nachschub), fertig, titel,
       ergebnisse: [], wiederholt: new Set(), warteschlange: [], verlauf: [] };
     if (!z.liste.length && waehler) z.liste.push(waehler([]));
     document.body.classList.add('uebt');

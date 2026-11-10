@@ -2,7 +2,7 @@
    Look wie bei Riff-Akten (gemalter Unterwassergrund, gläserne Fenster, Serifen-Überschriften),
    eigener Akzent ist Tupfis Gelb.
    Alle Größen sind Entwurfspixel mal --s. Entwurfsfläche: iPad hochkant, 1088 px breit.
-   Feste Untergrenzen nur für Tippflächen (48 px) und Text (15–18 px). */
+   Feste Untergrenzen nur für Tippflächen (48 px) und Text (mindestens 17 px, Design-Review 11.11.2026). */
 :root {
   --breite: 100vw;
   --s: calc(min(var(--breite), 1088px) / 1088);
@@ -25,14 +25,32 @@
   --gut: #0b6b4f;
   --fast: #8a4b00;
   --meldung-grund: #fff4d6;
+  --gut-hell: #9ff0cc;                   /* "Richtig!" und richtige Zahl auf dunklem Glas */
+  --gut-rand: #7fe3b8;
+  --fast-hell: #ffd28a;                  /* "Fast!" auf dunklem Glas */
+  --tupfi-blass: #fbe7a6;                /* Prüfen, solange die Bedenkzeit läuft */
+  --grund-ersatz: linear-gradient(180deg, #e6f2ef 0%, #a9d4e1 30%, #3f86a8 62%, #12425f 100%);
+  --dialog-oben: #164a6e;
+  --dialog-unten: #0e3554;
+  /* Fische und Stempel je Bereich: Einmaleins gelb wie Tupfi, Geteilt meerblau, Plus/Minus koralle */
+  --fisch-mal: #f5c842;
+  --fisch-mal-rand: #b9821a;
+  --fisch-mal-flosse: #e0a92a;
+  --fisch-geteilt: #7cc7ee;
+  --fisch-geteilt-rand: #2a6f9a;
+  --fisch-plusminus: #ff9e85;
+  --fisch-plusminus-rand: #b4513a;
+  --stempel-grund: #fff8e6;
+  --zier: #2d6f98;                       /* Zierlinie unter der Wortmarke */
+  --schwarm-hinterlegt: rgba(11, 49, 85, 0.14);   /* zarter Hintergrund je Schwarm im Tipp-Bild */
 
   /* Schriften */
   --serif: 'Libre Caslon Text', Georgia, 'Times New Roman', serif;   /* Überschriften */
   --sans: 'Andika', 'Trebuchet MS', system-ui, sans-serif;           /* Text */
-  --ziffern: 'Andika', 'Trebuchet MS', system-ui, sans-serif;        /* Zahlen, Prüfung mit tools/ziffern.html steht aus */
+  --ziffern: 'Andika', 'Trebuchet MS', system-ui, sans-serif;        /* Zahlen; 1/7, 6/9, 0/O eindeutig (tools/ziffern.html, geprüft 11.11.2026) */
 
   --text: max(17px, calc(27 * var(--s)));
-  --klein: max(15px, calc(21 * var(--s)));
+  --klein: max(17px, calc(21 * var(--s)));
   --h1: calc(89 * var(--s));
   --h2: max(22px, calc(40 * var(--s)));
   --wortmarke: max(20px, calc(31 * var(--s)));

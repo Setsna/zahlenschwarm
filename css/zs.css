@@ -12,13 +12,17 @@ body {
   line-height: 1.35;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  font-variant-numeric: lining-nums;   /* Caslon-Ziffern gleich hoch, z. B. "65 Fische" */
   display: flex;
   flex-direction: column;
 }
 h1, h2, h3, p, ul { margin: 0; }
+p, li { text-wrap: pretty; }   /* kein einzelnes Wort allein in der letzten Zeile */
 a { color: inherit; }
 img { display: block; max-width: 100%; height: auto; }
-:focus-visible { outline: 3px solid var(--weiss); outline-offset: 4px; border-radius: 12px; }
+/* Doppelter Fokusring: innen Navy, außen Weiß, sichtbar auf hellem und dunklem Wasser (Design-Review) */
+:focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; border-radius: 12px; box-shadow: 0 0 0 7px var(--weiss) !important; }
+::selection { background: var(--tupfi); color: var(--navy); }
 [hidden] { display: none !important; }
 .nurvorlesen { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -26,11 +30,10 @@ img { display: block; max-width: 100%; height: auto; }
 .grund {
   position: fixed; inset: 0; z-index: -3;
   /* Ersatz, solange das Bild lädt: oben hell, damit Navy sofort lesbar ist */
-  background: url(../bilder/grund-hoch.webp?b=3) 50% 0 / cover no-repeat,
-              linear-gradient(180deg, #e6f2ef 0%, #a9d4e1 30%, #3f86a8 62%, #12425f 100%);
+  background: url(../bilder/grund-hoch.webp?b=3) 50% 0 / cover no-repeat, var(--grund-ersatz);
 }
 @media (orientation: landscape) {
-  .grund { background-image: url(../bilder/grund-quer.webp?b=3), linear-gradient(180deg, #e6f2ef 0%, #a9d4e1 30%, #3f86a8 62%, #12425f 100%); }
+  .grund { background-image: url(../bilder/grund-quer.webp?b=3), var(--grund-ersatz); }
 }
 .licht {
   position: fixed; z-index: -2; pointer-events: none;
@@ -210,15 +213,17 @@ body.uebt .fuss { display: none; }
 .aufgabe { font-family: var(--ziffern); font-weight: 700; font-size: max(32px, min(calc(120 * var(--s)), 12cqi)); line-height: 1.1; display: flex; align-items: baseline; justify-content: center; flex-wrap: nowrap; white-space: nowrap; gap: .3em; font-variant-numeric: lining-nums tabular-nums; }
 .eingabe { min-width: 2.2ch; padding: 0 .2em; border-bottom: 4px solid var(--tupfi); color: var(--weiss); }
 .eingabe.leer { color: rgba(255, 255, 255, 0.55); }
-.ist-richtig .eingabe { border-color: #7fe3b8; }
-.ist-fast .eingabe { border-color: #ffd28a; }
+.ist-richtig .eingabe { border-color: var(--gut-rand); }
+.ist-fast .eingabe { border-color: var(--fast-hell); }
+/* Nach "Fast!" steht die richtige Zahl groß in der Aufgabe (Ingo, 11.11.2026) */
+.eingabe.ist-loesung { color: var(--gut-hell); border-color: var(--gut-rand); }
 
 .rueck { display: flex; flex-direction: column; align-items: center; gap: .4em; }
 .rueck:empty { display: none; }
 .rueck__titel { font-family: var(--serif); font-weight: 500; font-size: max(26px, calc(52 * var(--s))); display: inline-flex; align-items: center; gap: .3em; }
-.rueck--gut { color: #9ff0cc; }
-.rueck--fast { color: #ffd28a; }
-.rueck__loesung { font-family: var(--ziffern); font-weight: 700; font-size: max(24px, calc(48 * var(--s))); }
+.rueck--gut { color: var(--gut-hell); }
+.rueck--fast { color: var(--fast-hell); }
+.rueck__eigene { font-size: var(--klein); opacity: .85; }
 .rueck__weg { margin: 0; padding: 0; display: flex; flex-direction: column; gap: .8em; max-width: 30em; font-size: max(18px, calc(32 * var(--s))); }
 .weg-block { display: flex; flex-direction: column; gap: .1em; }
 .weg-block p, .rueck__weg > p { margin: 0; line-height: 1.3; }
@@ -232,7 +237,19 @@ body.uebt .fuss { display: none; }
 .tipp__stufe p { font-size: max(18px, calc(32 * var(--s))); }
 .tipp__stufe { display: flex; flex-direction: column; gap: .4em; }
 .tipp__stufe + .tipp__stufe { border-top: 1px solid rgba(11, 49, 85, 0.2); padding-top: .6em; }
-.schwarm-bild { max-width: 100%; height: auto; align-self: center; }
+/* Tipp-Bild: Breite aus dem Bild selbst (--bild-breite), hochkant in der Höhe begrenzt, an der Tafel größer */
+.schwarm-bild { width: min(100%, calc(var(--bild-breite, 300px) * var(--bild-zoom, 1))); height: auto; max-height: var(--bild-hoehe, none); align-self: center; }
+/* Hochkant: Bild niedriger und weniger Polster, solange ein Tipp offen ist, damit Prüfen im Bild bleibt (Design-Review) */
+@media (orientation: portrait) {
+  .schwarm-bild { --bild-hoehe: 14svh; }
+  .tipp { padding: .6em 1em; gap: .4em; }
+  .aufgabe-fenster:has(.tipp:not([hidden])) { padding-top: calc(24 * var(--s)); padding-bottom: calc(24 * var(--s)); gap: calc(14 * var(--s)); }
+}
+.sb-schwarm { fill: var(--schwarm-hinterlegt); }
+.sb-koerper { fill: var(--fisch-mal); stroke: var(--fisch-mal-rand); stroke-width: 1; }
+.sb-flosse { fill: var(--fisch-mal-flosse); }
+.sb-auge { fill: var(--navy); }
+.ueben__titel { font-family: var(--serif); font-weight: 500; font-size: max(19px, calc(32 * var(--s))); color: var(--navy); text-align: center; }
 
 /* Ziffernfeld: Telefon-Anordnung, große Tasten mit Abstand */
 .ziffernfeld { display: grid; grid-template-columns: repeat(3, var(--taste)); gap: var(--taste-abstand); --taste: max(72px, calc(128 * var(--s))); --taste-abstand: max(12px, calc(20 * var(--s))); }
@@ -246,8 +263,13 @@ body.uebt .fuss { display: none; }
 }
 .taste:active { transform: scale(0.94); }
 .taste--leise { background: rgba(255, 255, 255, 0.78); }
-.taste--pruefen { background: var(--tupfi); font-family: var(--sans); font-size: max(17px, calc(28 * var(--s))); }
+.taste--pruefen { background: var(--tupfi); font-family: var(--sans); font-size: max(17px, calc(28 * var(--s))); position: relative; overflow: hidden; isolation: isolate; }
+.taste--pruefen > span { position: relative; z-index: 1; }
 .taste:disabled { opacity: .5; cursor: default; transform: none; }
+/* Bedenkzeit: Prüfen ist blassgelb und füllt sich in der eingestellten Zeit mit Tupfi-Gelb (Ingo, 11.11.2026) */
+.taste--pruefen.wartet, .taste--pruefen.wartet:disabled { opacity: 1; background: var(--tupfi-blass); }
+.taste--pruefen.wartet::before { content: ""; position: absolute; inset: 0; z-index: 0; background: var(--tupfi); transform-origin: left center; transform: scaleX(0); animation: pruefen-fuellen var(--bedenkzeit, 1.5s) linear forwards; }
+@keyframes pruefen-fuellen { to { transform: scaleX(1); } }
 
 /* ---------- Knöpfe ---------- */
 .knopf {
@@ -292,7 +314,7 @@ dialog {
   max-width: min(620px, calc(100vw - 32px));
   color: var(--weiss);
   border-radius: calc(48 * var(--s)); border: 2px solid var(--glas-kante);
-  background: linear-gradient(180deg, #164a6e, #0e3554);
+  background: linear-gradient(180deg, var(--dialog-oben), var(--dialog-unten));
   box-shadow: inset 0 2px 0 var(--glas-glanz), 0 26px 50px -10px var(--glas-schatten);
   padding: calc(48 * var(--s)) calc(56 * var(--s));
 }
@@ -315,6 +337,7 @@ dialog .knopfreihe { margin-top: var(--abstand); }
   .knopf:active { transform: none; }
   .taste { transition: none; }
   .taste:active { transform: none; }
+  .taste--pruefen.wartet::before { animation: none; }   /* bleibt blass, bis Prüfen bereit ist */
 }
 
 /* ---------- Mein Tauchbuch (Etappe 5a) ---------- */
@@ -324,10 +347,11 @@ dialog .knopfreihe { margin-top: var(--abstand); }
 .schwarm-zahl { font-family: var(--serif); font-size: max(20px, calc(36 * var(--s))); text-align: center; }
 .schwarm-legende { display: flex; flex-wrap: wrap; align-items: center; gap: .3em .8em; }
 .punkt { display: inline-block; width: .8em; aspect-ratio: 1; border-radius: 50%; vertical-align: middle; }
-.punkt--mal { background: #f5c842; }
-.punkt--geteilt { background: #7cc7ee; }
-.punkt--plusminus { background: #ff9e85; }
-.stempelfeld { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(20 * var(--s)); grid-template-columns: repeat(auto-fill, minmax(max(104px, calc(150 * var(--s))), 1fr)); }
+.punkt--mal { background: var(--fisch-mal); }
+.punkt--geteilt { background: var(--fisch-geteilt); }
+.punkt--plusminus { background: var(--fisch-plusminus); }
+.stempelfeld { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(20 * var(--s)); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 640px) { .stempelfeld { grid-template-columns: repeat(5, minmax(0, 1fr)); } }   /* 10 Reihen = 2 volle Zeilen */
 .stempel-platz { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .2em; font-size: var(--klein); }
 .stempel-svg { width: max(64px, calc(104 * var(--s))); height: auto; }
 .stempel-svg text { font-family: var(--ziffern); font-weight: 700; }
@@ -347,10 +371,26 @@ dialog .knopfreihe { margin-top: var(--abstand); }
 .stempel-moment { display: flex; flex-direction: column; align-items: center; gap: .4em; background: rgba(255, 255, 255, 0.1); border: 2px solid var(--tupfi); border-radius: calc(36 * var(--s)); padding: .8em 1.2em; }
 .stempel-moment__titel { font-family: var(--serif); font-size: max(22px, calc(40 * var(--s))); color: var(--tupfi); }
 .stempel-moment .stempel-svg { width: max(80px, calc(130 * var(--s))); }
-/* Dialog "Neu anfangen" */
-.dialog { max-width: min(92vw, 34em); border: 2px solid var(--glas-kante); border-radius: calc(36 * var(--s)); padding: 1.2em 1.4em; background: #0e3a5c; color: var(--weiss); }
-.dialog::backdrop { background: rgba(3, 20, 35, 0.6); }
-.dialog h2 { font-family: var(--serif); font-weight: 500; font-size: var(--h2); margin-bottom: .4em; }
-.dialog .knopfreihe { margin-top: 1em; }
 .tupfi-frage { display: flex; flex-direction: column; align-items: center; gap: .5em; text-align: center; background: rgba(255, 255, 255, 0.1); border: 2px solid var(--tupfi); border-radius: calc(36 * var(--s)); padding: .8em 1em; }
 .tupfi-frage p { font-weight: 700; }
+
+/* ---------- Design-Review: Querformat und Tafel ---------- */
+/* iPad quer: Tupfi kleiner, damit die drei Bereiche der Startseite ohne Scrollen sichtbar sind */
+@media (orientation: landscape) and (min-width: 820px) {
+  .kopf .tupfi { width: calc(150 * var(--s)); min-width: 96px; }
+  .kopf { gap: calc(8 * var(--s)); }
+  .seite { gap: var(--abstand); padding-top: calc(36 * var(--s) + env(safe-area-inset-top, 0px)); }
+}
+/* Tafel/Beamer (nur Ingo zeigt dort): Üben breiter, Aufgabe, Rechenweg und Tipp-Bild größer */
+@media (orientation: landscape) and (min-width: 1600px) {
+  .ueben { width: min(100%, calc(1640 * var(--s))); }
+  .aufgabe { font-size: max(32px, min(calc(150 * var(--s)), 12cqi)); }
+  .rueck__titel { font-size: calc(64 * var(--s)); }
+  .rueck__weg { font-size: calc(46 * var(--s)); max-width: none; }
+  .tipp__stufe p { font-size: calc(42 * var(--s)); }
+  .schwarm-bild { --bild-zoom: 1.9; }
+}
+/* Hochkant: Tasten etwas kleiner (83–89 px statt 90–96 px), damit Prüfen auch mit offenem Tipp-Bild im Bild bleibt */
+@media (orientation: portrait) and (min-width: 601px) {
+  .ziffernfeld { --taste: max(72px, calc(118 * var(--s))); --taste-abstand: max(12px, calc(18 * var(--s))); }
+}

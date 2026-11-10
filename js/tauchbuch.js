@@ -72,10 +72,11 @@
   }
 
   /* Farben je Bereich (Fische und Stempel): Einmaleins gelb wie Tupfi, Geteilt meerblau, Plus/Minus koralle */
+  /* Werte stehen in css/tokens.css (--fisch-…) */
   const FARBE = {
-    mal: { voll: '#f5c842', rand: '#b9821a' },
-    geteilt: { voll: '#7cc7ee', rand: '#2a6f9a' },
-    plusminus: { voll: '#ff9e85', rand: '#b4513a' }
+    mal: { voll: 'var(--fisch-mal)', rand: 'var(--fisch-mal-rand)' },
+    geteilt: { voll: 'var(--fisch-geteilt)', rand: 'var(--fisch-geteilt-rand)' },
+    plusminus: { voll: 'var(--fisch-plusminus)', rand: 'var(--fisch-plusminus-rand)' }
   };
 
   /* Runder Stempel als SVG. da = geschafft (kräftig), sonst blasser, gestrichelter Platz ohne Schloss. */
@@ -84,7 +85,7 @@
     const text = st.kurz.replace(/&/g, '&amp;');
     const lang = st.kurz.replace(/\s/g, '').length > 2;
     return da
-      ? `<svg class="stempel-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" fill="#fff8e6" stroke="${f.rand}" stroke-width="5"/><circle cx="50" cy="50" r="37" fill="${f.voll}" stroke="${f.rand}" stroke-width="2" stroke-dasharray="4 3"/><text x="50" y="${lang ? 59 : 62}" text-anchor="middle" font-size="${lang ? 28 : 36}" fill="#0b3155">${text}</text></svg>`
+      ? `<svg class="stempel-svg" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" style="fill:var(--stempel-grund);stroke:${f.rand}" stroke-width="5"/><circle cx="50" cy="50" r="37" style="fill:${f.voll};stroke:${f.rand}" stroke-width="2" stroke-dasharray="4 3"/><text x="50" y="${lang ? 59 : 62}" text-anchor="middle" font-size="${lang ? 28 : 36}" style="fill:var(--navy)">${text}</text></svg>`
       : `<svg class="stempel-svg stempel-svg--offen" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-dasharray="6 6"/><text x="50" y="${lang ? 59 : 62}" text-anchor="middle" font-size="${lang ? 28 : 36}" fill="rgba(255,255,255,0.6)">${text}</text></svg>`;
   }
 

@@ -24,7 +24,7 @@
   let ersterAufruf = true;
 
   /* Kopf jeder Ansicht: Wortmarke, Zierlinie (drei Tupfen wie bei Tupfi), große Überschrift */
-  const ZIER = `<svg class="zier" viewBox="0 0 60 16" aria-hidden="true" focusable="false"><path d="M2 8H18M42 8H58" stroke="#2d6f98" stroke-width="1.6" stroke-linecap="round"/><circle cx="23" cy="8" r="2.6" fill="#2d6f98"/><circle cx="30" cy="8" r="2.6" fill="#2d6f98"/><circle cx="37" cy="8" r="2.6" fill="#2d6f98"/></svg>`;
+  const ZIER = `<svg class="zier" viewBox="0 0 60 16" aria-hidden="true" focusable="false"><path d="M2 8H18M42 8H58" style="stroke:var(--zier)" stroke-width="1.6" stroke-linecap="round"/><circle cx="23" cy="8" r="2.6" style="fill:var(--zier)"/><circle cx="30" cy="8" r="2.6" style="fill:var(--zier)"/><circle cx="37" cy="8" r="2.6" style="fill:var(--zier)"/></svg>`;
   const TUPFI = `<img class="tupfi" src="bilder/tupfi.png?b=${ZS.config.bildStand}" alt="" width="256" height="256">`;
   function kopf(titel, text = '', mitTupfi = true) {
     return `<header class="kopf">
@@ -169,11 +169,14 @@
 
   /* Endlos üben (Ingo: kein Rundenende), Auswahl nach Lernstand. "Zurück" führt zurück.
      Bei Plus/Minus sind die Kandidaten Formate; konkret() macht daraus jedes Mal eine neue Aufgabe. */
-  function rundeStarten(kandidaten, zurueck) {
+  /* Titel in der Üben-Leiste, damit das Kind sieht, was es gerade übt (Design-Review) */
+  const reihenTitel = (art, r) => art === 'geteilt' ? `Geteilt durch ${r}` : `${r}er-Reihe`;
+  function rundeStarten(kandidaten, zurueck, titel = '') {
     const neuInReihenfolge = kandidaten.some(a => a.platzhalter);
     ZS.ueben.starte({
       waehler: verlauf => ZS.aufgaben.konkret(ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf, neuInReihenfolge }).aufgabe),
-      fertig: () => zurueck()
+      fertig: () => zurueck(),
+      titel
     });
   }
 
@@ -225,7 +228,7 @@
     const F = ZS.tauchbuch.FARBE;
     const svg = fische.map((f, i) => {
       const p = SCHWARM_PLAETZE[i], c = F[f.bereich] || F.mal;
-      return `<g transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><path d="M-8 0 L-13 -4.5 L-13 4.5 Z" fill="${c.rand}"/><ellipse rx="8" ry="5" fill="${c.voll}" stroke="${c.rand}" stroke-width="1"/><circle cx="4" cy="-1" r="1.2" fill="#0b3155"/></g>`;
+      return `<g transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><path d="M-8 0 L-13 -4.5 L-13 4.5 Z" style="fill:${c.rand}"/><ellipse rx="8" ry="5" style="fill:${c.voll};stroke:${c.rand}" stroke-width="1"/><circle cx="4" cy="-1" r="1.2" style="fill:var(--navy)"/></g>`;
     }).join('');
     /* Ausschnitt wächst mit: wenige Fische erscheinen größer, ab etwa 200 Fischen ist das ganze Feld voll */
     const genutzt = SCHWARM_PLAETZE.slice(0, Math.max(fische.length, 24));
@@ -391,12 +394,16 @@
     else if (a === 'wer') { S.abmelden(); S.kinder().length ? ansichtWer() : ansichtNeu(); }
     else if (a === 'neu') { S.abmelden(); ansichtNeu(); }
     else if (a === 'bereich' && ARTEN[b.dataset.id]) ansichtReihen(b.dataset.id);
-    else if (a === 'reihe') { const art = b.dataset.art; rundeStarten(reiheVon(Number(b.dataset.r), art), () => ansichtReihen(art)); }
-    else if (a === 'gemischt') { const art = b.dataset.art; rundeStarten(begonneneReihen(art).flatMap(r => reiheVon(r, art)), () => ansichtReihen(art)); }
-    else if (a === 'heute') rundeStarten(PM[b.dataset.art] ? ZS.aufgaben.formate(b.dataset.art) : reiheVon(Number(b.dataset.r), b.dataset.art), ansichtStart);
+    else if (a === 'reihe') { const art = b.dataset.art, r = Number(b.dataset.r); rundeStarten(reiheVon(r, art), () => ansichtReihen(art), reihenTitel(art, r)); }
+    else if (a === 'gemischt') { const art = b.dataset.art; rundeStarten(begonneneReihen(art).flatMap(r => reiheVon(r, art)), () => ansichtReihen(art), art === 'geteilt' ? 'Geteilt gemischt' : 'Einmaleins gemischt'); }
+    else if (a === 'heute') {
+      const art = b.dataset.art, r = Number(b.dataset.r);
+      if (PM[art]) rundeStarten(ZS.aufgaben.formate(art), ansichtStart, PM[art].name);
+      else rundeStarten(reiheVon(r, art), ansichtStart, reihenTitel(art, r));
+    }
     else if (a === 'bereich' && b.dataset.id === 'plusminus') ansichtPlusMinus();
-    else if (a === 'pm') rundeStarten(ZS.aufgaben.formate(b.dataset.op), ansichtPlusMinus);
-    else if (a === 'pm-gemischt') rundeStarten(pmBegonnen().flatMap(op => ZS.aufgaben.formate(op)), ansichtPlusMinus);
+    else if (a === 'pm') rundeStarten(ZS.aufgaben.formate(b.dataset.op), ansichtPlusMinus, PM[b.dataset.op].name);
+    else if (a === 'pm-gemischt') rundeStarten(pmBegonnen().flatMap(op => ZS.aufgaben.formate(op)), ansichtPlusMinus, 'Plus und Minus gemischt');
     else if (a === 'start') ansichtStart();
     else if (a === 'tauchbuch') ansichtTauchbuch();
     else if (a === 'gefuehl') { S.gefuehlMerken(b.dataset.key, b.dataset.wert); ansichtTauchbuch(); melden('Danke! Das steht jetzt in deinem Tauchbuch.'); }
