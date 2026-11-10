@@ -221,8 +221,10 @@
       if (st) app.querySelector('[data-u="gefuehl"]').focus();
       else { fokusWeiter(); z.weiterTimer = setTimeout(naechste, C.pauseNachLangsamSek * 1000); }
     } else {
-      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><div class="rueck__weg">${erkl.map(block).join('')}</div>`,
-        `Fast! ${auf.text} = ${auf.loesung}. ${A.erklaerungText(erkl)}`, weiterKnopf());
+      /* Nur der erste Rechenweg (Leitweg), ohne "Oder:" und Tauschaufgabe: Auf dem iPad quer rutschte
+         der Weiter-Knopf sonst aus dem Bild (Ingo, 11.11.2026). Zeilenumbrüche bleiben. */
+      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><div class="rueck__weg">${block(erkl[0])}</div>`,
+        `Fast! ${auf.text} = ${auf.loesung}. ${A.erklaerungText([erkl[0]])}`, weiterKnopf());
       fokusWeiter();
     }
   }
