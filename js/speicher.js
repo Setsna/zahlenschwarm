@@ -131,6 +131,22 @@
     try { sessionStorage.removeItem(WER); } catch (e) { /* egal */ }
   }
 
+  /* ---------- Lernstand je Aufgabe ---------- */
+  /* Merkt eine Antwort: wie oft richtig/falsch, wann zuletzt, letzte Denkzeit, ob ein Tipp genommen wurde.
+     Die Lernstufen (Leitner) kommen in Etappe 3 dazu. Gibt zurück, ob gespeichert wurde. */
+  function antwortMerken(id, { richtig, denkSek, tipp }) {
+    const k = aktiv();
+    if (!k) return false;
+    const e = istObjekt(k.aufgaben[id]) ? k.aufgaben[id] : {};
+    e.richtig = (Number(e.richtig) || 0) + (richtig ? 1 : 0);
+    e.falsch = (Number(e.falsch) || 0) + (richtig ? 0 : 1);
+    e.zuletzt = Date.now();
+    e.denkSek = denkSek;
+    e.tipp = !!tipp;
+    k.aufgaben[id] = e;
+    return speichern();
+  }
+
   function aktiv() { return kinder.find(k => k.id === aktivId) || null; }
 
   laden();
@@ -146,6 +162,7 @@
     anlegen,
     waehlen,
     abmelden,
-    speichern
+    speichern,
+    antwortMerken
   };
 })();

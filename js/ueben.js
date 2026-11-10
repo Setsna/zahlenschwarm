@@ -3,7 +3,8 @@
    - Denkzeit = Zeit von der Anzeige bis zur ersten getippten Ziffer (nicht sichtbar).
    - "Prüfen" ist kurz gesperrt (Bedenkzeit, config.js).
    - Bedienbar mit Finger und Tastatur (Ziffern, Rücktaste, Enter).
-   Stand Etappe 2, Schritt 2: eine Liste von Aufgaben nacheinander. Wiederholen und Rundenende kommen in Schritt 3. */
+   - Jede Antwort wird sofort gespeichert (ZS.speicher.antwortMerken).
+   - Eine falsche Aufgabe kommt in derselben Runde nach zwei anderen noch einmal (je Aufgabe einmal). */
 (() => {
   'use strict';
   const C = ZS.config, A = ZS.aufgaben;
@@ -124,7 +125,17 @@
     clearTimeout(z.bedenkTimer);
     const denkSek = (z.ersteZiffer ?? (performance.now() - z.start)) / 1000;
     const zuegig = richtig && z.tippStufe === 0 && denkSek <= C.zuegig[auf.art];
-    z.ergebnisse.push({ id: auf.id, richtig, denkSek: Math.round(denkSek * 10) / 10, tipp: z.tippStufe > 0, zuegig });
+    const eintrag = { id: auf.id, richtig, denkSek: Math.round(denkSek * 10) / 10, tipp: z.tippStufe > 0, zuegig };
+    z.ergebnisse.push(eintrag);
+    if (!ZS.speicher.antwortMerken(auf.id, eintrag) && !ZS.speicher.istVorschau) {
+      const m = document.getElementById('meldung');
+      if (m) m.textContent = 'Dein Stand konnte gerade nicht gespeichert werden. Bitte sag deiner Lehrkraft Bescheid.';
+    }
+    /* Falsch: nach zwei anderen Aufgaben noch einmal, aber jede Aufgabe nur einmal extra */
+    if (!richtig && !z.wiederholt.has(auf.id)) {
+      z.wiederholt.add(auf.id);
+      z.liste.splice(Math.min(z.index + 3, z.liste.length), 0, auf);
+    }
     app.querySelectorAll('.ziffernfeld button, [data-u="tipp"]').forEach(b => { b.disabled = true; });
     app.querySelector('.aufgabe-fenster').classList.add(richtig ? 'ist-richtig' : 'ist-fast');
 
@@ -164,21 +175,23 @@
   function naechste() {
     clearTimeout(z.weiterTimer);
     z.index++;
-    if (z.index >= z.liste.length) beenden();
+    if (z.index >= z.liste.length) beenden(false);
     else zeigeAufgabe();
   }
-  function beenden() {
+  /* abgebrochen: true bei Pause, false am Ende der Runde */
+  function beenden(abgebrochen = true) {
     if (!z) return;
     clearTimeout(z.weiterTimer); clearTimeout(z.bedenkTimer);
     const { fertig, ergebnisse } = z;
     z = null;
     document.body.classList.remove('uebt');
-    if (fertig) fertig(ergebnisse);
+    if (fertig) fertig(ergebnisse, abgebrochen);
   }
 
-  /* Startet eine Übung. aufgaben: Liste aus ZS.aufgaben. fertig(ergebnisse) wird am Ende oder bei Pause gerufen. */
+  /* Startet eine Übung. aufgaben: Liste aus ZS.aufgaben.
+     fertig(ergebnisse, abgebrochen) wird am Ende der Runde oder bei Pause gerufen. */
   function starte({ aufgaben, fertig }) {
-    z = { liste: aufgaben.slice(), index: 0, fertig, ergebnisse: [] };
+    z = { liste: aufgaben.slice(), index: 0, fertig, ergebnisse: [], wiederholt: new Set() };
     document.body.classList.add('uebt');
     zeigeAufgabe();
   }
@@ -194,7 +207,7 @@
     else if (u === 'pruefen') pruefen();
     else if (u === 'tipp') tipp();
     else if (u === 'weiter') naechste();
-    else if (u === 'pause') beenden();
+    else if (u === 'pause') beenden(true);
   });
 
   document.addEventListener('keydown', e => {

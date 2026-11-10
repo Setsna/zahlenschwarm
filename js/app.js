@@ -96,13 +96,55 @@
       <section class="bereiche-block" aria-labelledby="h-bereiche">
         <h2 id="h-bereiche" class="abschnitt hof">Wohin schwimmst du heute?</h2>
         <ul class="bereiche">${BEREICHE.map(bereichKarte).join('')}</ul>
-        <p class="einleitung hof">Hier wird gerade noch gebaut. Bald geht es los.</p>
+        <p class="einleitung hof">Geteilt und Plus und Minus kommen bald.</p>
       </section>
       ${S.istVorschau ? '' : `<p class="knopfreihe">
         ${mehrere ? '<button type="button" class="knopf leise-knopf" data-aktion="wer">Kind wechseln</button>' : ''}
         <button type="button" class="knopf leise-knopf" data-aktion="neu">Neues Kind anlegen</button>
       </p>`}
       ${erwachsene()}`, `Hallo, ${k.name}`);
+  }
+
+  /* ---------- Einmaleins: Reihen-Auswahl ---------- */
+  /* In Etappe 2 ist nur die 2er-Reihe offen, die anderen kommen in Etappe 4. */
+  const OFFENE_REIHEN = [2];
+  function ansichtReihen() {
+    const kacheln = ZS.config.reihenFolge.map(r => OFFENE_REIHEN.includes(r)
+      ? `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="reihe" data-r="${r}"><span class="reihe__zahl">${r}er</span><span class="bereich__text">Reihe</span></button></li>`
+      : `<li><div class="fenster bereich reihe bereich--bald"><span class="reihe__zahl">${r}er</span><span class="bereich__text">Reihe</span><span class="bereich__status">Bald</span><span class="nurvorlesen">, kommt bald</span></div></li>`).join('');
+    zeigen(`
+      ${kopf('Einmaleins', 'Welche Reihe übst du heute?', false)}
+      <section class="bereiche-block" aria-label="Reihen">
+        <ul class="bereiche reihen">${kacheln}</ul>
+      </section>
+      <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, 'Einmaleins');
+  }
+
+  function rundeStarten(r) {
+    ZS.ueben.starte({
+      aufgaben: ZS.aufgaben.runde(r),
+      fertig: (ergebnisse, abgebrochen) => abgebrochen ? ansichtReihen() : ansichtRundenende(r, ergebnisse)
+    });
+  }
+
+  /* ---------- Rundenende: keine Punkte, keine Prozente ---------- */
+  function ansichtRundenende(r, ergebnisse) {
+    const ids = [...new Set(ergebnisse.map(e => e.id))];
+    const uebtNoch = ids.filter(id => ergebnisse.some(e => e.id === id && !e.richtig)).map(ZS.aufgaben.ausId).filter(Boolean);
+    const inhalt = uebtNoch.length
+      ? `<h2 id="h-noch">Diese Aufgaben übst du noch</h2>
+         <ul class="noch-liste">${uebtNoch.map(a => `<li>${esc(a.text)} = ${a.loesung}</li>`).join('')}</ul>
+         <p>Sie kommen beim nächsten Mal wieder.</p>`
+      : `<h2 id="h-noch">Alles beim ersten Mal richtig.</h2><p>Stark! Diese Reihe sitzt schon gut.</p>`;
+    zeigen(`
+      ${kopf('Geschafft!', `Du hast ${ids.length} Aufgaben der ${r}er-Reihe gerechnet.`)}
+      <section class="fenster mitte" aria-labelledby="h-noch">
+        ${inhalt}
+        <p class="knopfreihe">
+          <button type="button" class="knopf haupt" data-aktion="reihe" data-r="${r}">Noch eine Runde</button>
+          <button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button>
+        </p>
+      </section>`, 'Geschafft');
   }
 
   /* ---------- Für Lehrkräfte und Eltern (aufklappbar, am Ende jeder Startansicht) ---------- */
@@ -160,11 +202,9 @@
     if (a === 'waehlen') { S.waehlen(b.dataset.id); ansichtStart(); }
     else if (a === 'wer') { S.abmelden(); S.kinder().length ? ansichtWer() : ansichtNeu(); }
     else if (a === 'neu') { S.abmelden(); ansichtNeu(); }
-    /* Etappe 2, Schritt 2: Einmaleins öffnet zum Ausprobieren eine einzelne Aufgabe der 2er-Reihe.
-       Reihen-Auswahl und ganze Runde kommen in Schritt 3. */
-    else if (a === 'bereich' && b.dataset.id === 'mal') {
-      ZS.ueben.starte({ aufgaben: ZS.aufgaben.runde(2).slice(0, 1), fertig: () => ansichtStart() });
-    }
+    else if (a === 'bereich' && b.dataset.id === 'mal') ansichtReihen();
+    else if (a === 'reihe') rundeStarten(Number(b.dataset.r));
+    else if (a === 'start') ansichtStart();
   });
 
   if (S.istVorschau) {
