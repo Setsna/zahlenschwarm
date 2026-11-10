@@ -143,6 +143,8 @@ button.bereich:active { transform: scale(0.97); }
 .rt { display: block; width: max(8px, calc(14 * var(--s))); aspect-ratio: 1; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.75); }
 .rt--sicher { background: var(--tupfi); border-color: var(--tupfi); }
 .rt--uebt { background: linear-gradient(90deg, rgba(255, 255, 255, 0.85) 50%, transparent 50%); }
+.gemischt { width: 100%; min-height: calc(150 * var(--s)); margin-top: calc(28 * var(--s)); }
+button.gemischt { border: 3px solid var(--tupfi); }
 .heute { text-align: center; align-items: center; border: 3px solid var(--tupfi); }
 
 /* ---------- Für Lehrkräfte und Eltern ---------- */

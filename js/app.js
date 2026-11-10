@@ -107,8 +107,10 @@
   }
 
   /* ---------- Einmaleins: Reihen-Auswahl ---------- */
-  /* In Etappe 2 ist nur die 2er-Reihe offen, die anderen kommen in Etappe 4. */
-  const OFFENE_REIHEN = [2];
+  /* Etappe 4a: alle Reihen offen, das Kind wählt selbst, "Heute bereit für dich" empfiehlt */
+  const OFFENE_REIHEN = ZS.config.reihenFolge.slice();
+  /* Begonnene Reihen: mindestens eine Aufgabe schon geübt */
+  const begonneneReihen = () => OFFENE_REIHEN.filter(r => ZS.aufgaben.reihe(r).some(a => ZS.lernstand.eintrag(S.aktiv(), a.id).box > 0));
   /* 10 Tupfen je Reihe: gefüllt = sicher, halb = übe ich noch, leer = neu */
   function reihenTupfen(r) {
     const k = S.aktiv(), aufgaben = ZS.aufgaben.reihe(r);
@@ -121,17 +123,22 @@
     const kacheln = ZS.config.reihenFolge.map(r => OFFENE_REIHEN.includes(r)
       ? `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="reihe" data-r="${r}"><span class="reihe__zahl">${r}er</span><span class="bereich__text">Reihe</span>${reihenTupfen(r)}</button></li>`
       : `<li><div class="fenster bereich reihe bereich--bald"><span class="reihe__zahl">${r}er</span><span class="bereich__text">Reihe</span><span class="bereich__status">Bald</span><span class="nurvorlesen">, kommt bald</span></div></li>`).join('');
+    /* Gemischt: Aufgaben aus allen begonnenen Reihen */
+    const begonnen = begonneneReihen();
+    const gemischt = begonnen.length
+      ? `<button type="button" class="fenster bereich gemischt" data-aktion="gemischt"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Aufgaben aus deinen Reihen: ${begonnen.map(r => `${r}er`).join(', ')}</span></button>`
+      : `<div class="fenster bereich gemischt bereich--bald"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Geht los, sobald du eine Reihe geübt hast.</span></div>`;
     zeigen(`
       ${kopf('Einmaleins', 'Welche Reihe übst du heute?', false)}
       <section class="bereiche-block" aria-label="Reihen">
         <ul class="bereiche reihen">${kacheln}</ul>
+        ${gemischt}
       </section>
       <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, 'Einmaleins');
   }
 
   /* Endlos üben (Ingo: kein Rundenende), Auswahl nach Lernstand. "Zurück" führt zurück. */
-  function rundeStarten(r, zurueck = ansichtReihen) {
-    const kandidaten = ZS.aufgaben.reihe(r);
+  function rundeStarten(r, zurueck = ansichtReihen, kandidaten = ZS.aufgaben.reihe(r)) {
     ZS.ueben.starte({
       waehler: verlauf => ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf }).aufgabe,
       fertig: () => zurueck()
@@ -216,6 +223,7 @@
     else if (a === 'neu') { S.abmelden(); ansichtNeu(); }
     else if (a === 'bereich' && b.dataset.id === 'mal') ansichtReihen();
     else if (a === 'reihe') rundeStarten(Number(b.dataset.r));
+    else if (a === 'gemischt') rundeStarten(null, ansichtReihen, begonneneReihen().flatMap(r => ZS.aufgaben.reihe(r)));
     else if (a === 'heute') rundeStarten(Number(b.dataset.r), ansichtStart);
     else if (a === 'start') ansichtStart();
   });

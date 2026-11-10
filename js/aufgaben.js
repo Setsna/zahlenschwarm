@@ -70,18 +70,49 @@
     }
   }
 
-  /* Gibt die Blöcke der Erklärung zurück. Der erste Block ist immer der wichtigste Weg. */
+  /* Leitweg der Reihe b (Mini-Spec Etappe 4, freigegeben von Ingo):
+     4er = 2er verdoppeln, 8er = 4er verdoppeln, 5er = Hälfte von mal 10, 10er = Null anhängen,
+     9er = mal 10 und einmal weg, 3er = mal 2 und noch einmal, 6er = mal 5 und noch einmal, 7er = mal 5 und mal 2 */
+  function leitweg(a, b) {
+    const p = a * b;
+    switch (b) {
+      case 1: return [`${a} ${MAL} 1 = ${a}`, 'Mal 1 bleibt die Zahl gleich'];
+      case 2: return [`${a} ${MAL} 2 heißt:`, `${a} und noch einmal ${a}`, `${a} + ${a} = ${p}`];
+      case 3: return [`Erst ${a} ${MAL} 2 = ${2 * a}`, `Noch einmal ${a} dazu:`, `${2 * a} + ${a} = ${p}`];
+      case 4: return [`Erst ${a} ${MAL} 2 = ${2 * a}`, 'Dann verdoppeln:', `${2 * a} + ${2 * a} = ${p}`];
+      case 5: return [`Erst ${a} ${MAL} 10 = ${10 * a}`, 'Davon die Hälfte:', `${10 * a} ${GETEILT} 2 = ${p}`];
+      case 6: return [`Erst ${a} ${MAL} 5 = ${5 * a}`, `Noch einmal ${a} dazu:`, `${5 * a} + ${a} = ${p}`];
+      case 7: return [`${a} ${MAL} 5 = ${5 * a}`, `${a} ${MAL} 2 = ${2 * a}`, 'Zusammen:', `${5 * a} + ${2 * a} = ${p}`];
+      case 8: return [`Erst ${a} ${MAL} 4 = ${4 * a}`, 'Dann verdoppeln:', `${4 * a} + ${4 * a} = ${p}`];
+      case 9: return [`Erst ${a} ${MAL} 10 = ${10 * a}`, `Dann einmal ${a} weg:`, `${10 * a} ${MINUS} ${a} = ${p}`];
+      case 10: return [`${a} ${MAL} 10 heißt:`, `an die ${a} eine Null anhängen`, `Das sind ${p}`];
+      default: return [`${a} ${MAL} ${b} = ${p}`];
+    }
+  }
+  const letzteZahl = zeilen => (zeilen[zeilen.length - 1].match(/\d+/g) || []).join(',');
+
+  /* Gibt die Blöcke der Erklärung zurück. Der erste Block ist immer der Leitweg der Reihe. */
   function erklaerung(aufgabe) {
     const { a, b, loesung: p } = aufgabe;
     const bloecke = [];
-    if (b === 2 && a !== 2) {
-      /* 2er-Reihe: Verdoppeln ist der leichteste Weg */
-      bloecke.push([`${a} ${MAL} 2 heißt:`, `${a} und noch einmal ${a}`, `${a} + ${a} = ${p}`]);
+    if (a === 1 && b !== 2) {
+      bloecke.push([`1 ${MAL} ${b} heißt:`, `einmal die ${b}`, `Das sind ${b}`]);
+    } else if ((a === 2 || a === 10) && b !== 2 && b !== a) {
+      /* "2 mal" = verdoppeln, "10 mal" = Zehner: einfacher als jeder Leitweg der Reihe */
+      bloecke.push(kernweg(a, b));
+    } else if (b === 2) {
+      bloecke.push(leitweg(a, 2));
       /* 4 · 2 über die Nachbaraufgabe 5 · 2, sonst wäre das "Oder" nur noch einmal Verdoppeln */
       if (a === 4) bloecke.push(['Oder:', `5 ${MAL} 2 = 10`, 'Einmal 2 weniger:', `10 ${MINUS} 2 = ${p}`]);
       else if ([6, 7, 8, 9].includes(a)) bloecke.push(['Oder:', ...kernweg(a, b)]);
     } else {
-      bloecke.push(kernweg(a, b));
+      const erster = leitweg(a, b);
+      bloecke.push(erster);
+      /* "Oder:" über den ersten Faktor, wenn er etwas Neues zeigt (nicht bei 1er- und 10er-Reihe) */
+      if (![1, 2, 5].includes(a) && ![1, 10].includes(b)) {
+        const oder = kernweg(a, b);
+        if (letzteZahl(oder) !== letzteZahl(erster)) bloecke.push(['Oder:', ...oder]);
+      }
     }
     if (a !== b) bloecke.push(['Tauschaufgabe:', `${b} ${MAL} ${a} = ${p}`]);
     return bloecke;
@@ -93,26 +124,45 @@
   /* ---------- Tipps von Tupfi (gestuft, ohne Lösung) ---------- */
   const schwarmText = (a, b) => `${a} ${a === 1 ? 'Schwarm' : 'Schwärme'} mit je ${b} ${b === 1 ? 'Fisch' : 'Fischen'}.`;
 
+  /* Tipp 1: Strategie nach dem Leitweg der Reihe */
   function strategie(a, b) {
     if (b === 2) return `Rechne das Doppelte von ${a}.`;
+    if (a === 1) return `Einmal die ${b}. Wie viel ist das?`;
     if (a === 2) return `Rechne das Doppelte von ${b}.`;
-    switch (a) {
+    if (a === 10) return `Mal 10: Hänge an die ${b} eine Null an.`;
+    switch (b) {
       case 1: return 'Mal 1 ändert die Zahl nicht.';
-      case 3: return `Rechne 2 ${MAL} ${b} und noch einmal ${b} dazu.`;
-      case 4: return `Verdopple ${b}. Dann verdopple noch einmal.`;
-      case 5: return `Rechne erst 10 ${MAL} ${b}. Nimm davon die Hälfte.`;
-      case 6: return `Rechne 5 ${MAL} ${b} und noch einmal ${b} dazu.`;
-      case 7: return `Rechne 5 ${MAL} ${b} und 2 ${MAL} ${b}. Zähle beides zusammen.`;
-      case 8: return `Rechne 10 ${MAL} ${b} und nimm 2 ${MAL} ${b} weg.`;
-      case 9: return `Rechne 10 ${MAL} ${b} und nimm einmal ${b} weg.`;
-      case 10: return `Mal 10: Hänge an die ${b} eine Null an.`;
-      default: return `Denk an eine Aufgabe, die du schon kennst.`;
+      case 3: return `Rechne ${a} ${MAL} 2 und noch einmal ${a} dazu.`;
+      case 4: return `Rechne ${a} ${MAL} 2 und verdopple das.`;
+      case 5: return `Rechne ${a} ${MAL} 10 und nimm davon die Hälfte.`;
+      case 6: return `Rechne ${a} ${MAL} 5 und noch einmal ${a} dazu.`;
+      case 7: return `Rechne ${a} ${MAL} 5 und ${a} ${MAL} 2. Zähle beides zusammen.`;
+      case 8: return `Rechne ${a} ${MAL} 4 und verdopple das.`;
+      case 9: return `Rechne ${a} ${MAL} 10 und nimm einmal ${a} weg.`;
+      case 10: return `Mal 10: Hänge an die ${a} eine Null an.`;
+      default: return 'Denk an eine Aufgabe, die du schon kennst.';
     }
   }
 
+  /* Tipp 3: erster Schritt des Leitwegs vorgerechnet, ohne Lösung */
   function hilfsaufgabe(a, b) {
     /* 5 · 2: "10 · 2 = 20" würde die Lösung 10 zeigen, deshalb Zweierschritte */
     if (a === 5 && b === 2) return 'Zähle in Zweierschritten: 2, 4, 6 … bis du fünf Zweien hast.';
+    if (a === 1) return 'Mal 1 bleibt die Zahl gleich.';
+    if (a === 2) return `${b} und noch einmal ${b}.`;
+    if (a === 10) return `Wie viel sind ${b} Zehner?`;
+    switch (b) {
+      case 1: return 'Mal 1 bleibt die Zahl gleich.';
+      case 3: return `${a} ${MAL} 2 = ${2 * a}. Noch einmal ${a} kommt dazu.`;
+      case 4: return `${a} ${MAL} 2 = ${2 * a}. Verdopple das.`;
+      case 5: return `${a} ${MAL} 10 = ${10 * a}. Die Hälfte davon.`;
+      case 6: return `${a} ${MAL} 5 = ${5 * a}. Noch einmal ${a} kommt dazu.`;
+      case 7: return `${a} ${MAL} 5 = ${5 * a}. Dazu kommt noch ${a} ${MAL} 2.`;
+      case 8: return `${a} ${MAL} 4 = ${4 * a}. Verdopple das.`;
+      case 9: return `${a} ${MAL} 10 = ${10 * a}. Einmal ${a} geht weg.`;
+      case 10: return `Wie viel sind ${a} Zehner?`;
+    }
+    /* 2er-Reihe: Kernaufgabe zum ersten Faktor (wie freigegeben) */
     switch (a) {
       case 1: return 'Mal 1 bleibt die Zahl gleich.';
       case 2: return `${b} und noch einmal ${b}.`;
