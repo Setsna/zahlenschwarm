@@ -93,6 +93,7 @@
     zeigen(`
       ${kopf(`Hallo, ${esc(k.name)}!`, 'Ich bin Tupfi. Was möchtest du heute üben?')}
       ${S.istVorschau ? `<p class="einleitung hof">Vorschau: ${Object.keys(k.schwarm).length} sichere Aufgaben.</p>` : ''}
+      ${heuteKarte()}
       <section class="bereiche-block" aria-labelledby="h-bereiche">
         <h2 id="h-bereiche" class="abschnitt hof">Wohin schwimmst du heute?</h2>
         <ul class="bereiche">${BEREICHE.map(bereichKarte).join('')}</ul>
@@ -108,9 +109,17 @@
   /* ---------- Einmaleins: Reihen-Auswahl ---------- */
   /* In Etappe 2 ist nur die 2er-Reihe offen, die anderen kommen in Etappe 4. */
   const OFFENE_REIHEN = [2];
+  /* 10 Tupfen je Reihe: gefüllt = sicher, halb = übe ich noch, leer = neu */
+  function reihenTupfen(r) {
+    const k = S.aktiv(), aufgaben = ZS.aufgaben.reihe(r);
+    const st = ZS.lernstand.reiheStand(k, aufgaben);
+    const punkte = aufgaben.map(a => `<i class="rt rt--${ZS.lernstand.status(ZS.lernstand.eintrag(k, a.id))}"></i>`).join('');
+    return `<span class="reihen-tupfen" aria-hidden="true">${punkte}</span><span class="nurvorlesen">, ${st.sicher} von ${st.gesamt} sicher</span>`;
+  }
+
   function ansichtReihen() {
     const kacheln = ZS.config.reihenFolge.map(r => OFFENE_REIHEN.includes(r)
-      ? `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="reihe" data-r="${r}"><span class="reihe__zahl">${r}er</span><span class="bereich__text">Reihe</span></button></li>`
+      ? `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="reihe" data-r="${r}"><span class="reihe__zahl">${r}er</span><span class="bereich__text">Reihe</span>${reihenTupfen(r)}</button></li>`
       : `<li><div class="fenster bereich reihe bereich--bald"><span class="reihe__zahl">${r}er</span><span class="bereich__text">Reihe</span><span class="bereich__status">Bald</span><span class="nurvorlesen">, kommt bald</span></div></li>`).join('');
     zeigen(`
       ${kopf('Einmaleins', 'Welche Reihe übst du heute?', false)}
@@ -120,13 +129,34 @@
       <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, 'Einmaleins');
   }
 
-  /* Endlos üben (Ingo: kein Rundenende). "Zurück" führt zur Reihen-Auswahl. */
-  function rundeStarten(r) {
+  /* Endlos üben (Ingo: kein Rundenende), Auswahl nach Lernstand. "Zurück" führt zurück. */
+  function rundeStarten(r, zurueck = ansichtReihen) {
+    const kandidaten = ZS.aufgaben.reihe(r);
     ZS.ueben.starte({
-      aufgaben: ZS.aufgaben.runde(r),
-      nachschub: () => ZS.aufgaben.runde(r),
-      fertig: () => ansichtReihen()
+      waehler: verlauf => ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf }).aufgabe,
+      fertig: () => zurueck()
     });
+  }
+
+  /* ---------- Heute bereit für dich ---------- */
+  /* Keine Zahlen, damit kein Druck entsteht */
+  function heuteKarte() {
+    const reihen = OFFENE_REIHEN.map(nr => ({ nr, aufgaben: ZS.aufgaben.reihe(nr) }));
+    const e = ZS.lernstand.empfehlung(S.aktiv(), reihen);
+    if (!e.reihe) return '';
+    const text = {
+      faellig: `${e.reihe}er-Reihe: Ein paar Aufgaben warten auf dich.`,
+      neu: `Neu für dich: die ${e.reihe}er-Reihe.`,
+      weiter: `${e.reihe}er-Reihe: Es gibt noch neue Aufgaben für dich.`,
+      fertig: 'Heute ist alles geschafft. Du kannst trotzdem weiterüben.'
+    }[e.art];
+    const knopf = e.art === 'fertig' ? 'Weiterüben' : "Los geht's";
+    return `
+      <section class="fenster heute" aria-labelledby="h-heute">
+        <h2 id="h-heute">Heute bereit für dich</h2>
+        <p>${esc(text)}</p>
+        <p><button type="button" class="knopf haupt" data-aktion="heute" data-r="${e.reihe}">${knopf}</button></p>
+      </section>`;
   }
 
   /* ---------- Für Lehrkräfte und Eltern (aufklappbar, am Ende jeder Startansicht) ---------- */
@@ -186,6 +216,7 @@
     else if (a === 'neu') { S.abmelden(); ansichtNeu(); }
     else if (a === 'bereich' && b.dataset.id === 'mal') ansichtReihen();
     else if (a === 'reihe') rundeStarten(Number(b.dataset.r));
+    else if (a === 'heute') rundeStarten(Number(b.dataset.r), ansichtStart);
     else if (a === 'start') ansichtStart();
   });
 

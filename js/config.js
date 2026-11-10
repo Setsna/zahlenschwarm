@@ -39,7 +39,9 @@ ZS.config = {
   eingabeHoechstensZiffern: 3,
   /* "zügig" = Zeit von der Anzeige der Aufgabe bis zur ersten getippten Ziffer, in Sekunden */
   zuegig: { mal: 5, geteilt: 8, plus: 8, minus: 8, mitUebergang: 10 },
-  leitner: { boxen: 5, abstandTage: [0, 0, 1, 3, 7] },
+  /* Lernstufen: Abstand in Tagen je Stufe 0–4; mindestAbstand: dieselbe Aufgabe höchstens jede 4. Aufgabe;
+     autoTippAbFehlern: nach so vielen Fehlern am selben Tag erscheint Tipp 2 von selbst */
+  leitner: { boxen: 5, abstandTage: [0, 0, 1, 3, 7], mindestAbstand: 3, autoTippAbFehlern: 3 },
 
   /* Lernzeit: eine Sitzung zählt höchstens 30 Minuten, unter 3 Sekunden gar nicht */
   lernzeit: { hoechstensSek: 1800, mindestensSek: 3 }

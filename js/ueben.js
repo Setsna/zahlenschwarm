@@ -5,7 +5,9 @@
    - Bedienbar mit Finger und Tastatur (Ziffern, Rücktaste, Enter).
    - Jede Antwort wird sofort gespeichert (ZS.speicher.antwortMerken).
    - Eine falsche Aufgabe kommt nach zwei anderen noch einmal (je Aufgabe einmal).
-   - Mit "nachschub" kommen endlos Aufgaben (Ingo: kein Rundenende). Verlassen nur über "Zurück". */
+   - Mit "waehler" kommt endlos die jeweils nächste Aufgabe nach Lernstand (js/lernstand.js).
+     Verlassen nur über "Zurück" (Ingo: kein Rundenende).
+   - Ab 3 Fehlern bei einer Aufgabe am selben Tag erscheint Tipp 2 (Schwarm-Bild) von selbst. */
 (() => {
   'use strict';
   const C = ZS.config, A = ZS.aufgaben;
@@ -59,11 +61,14 @@
   function zeigeAufgabe() {
     const auf = z.liste[z.index];
     Object.assign(z, { aufgabe: auf, eingabe: '', start: performance.now(), ersteZiffer: null, tippStufe: 0, beantwortet: false });
+    const kind = ZS.speicher.aktiv();
+    const stand = kind ? ZS.lernstand.eintrag(kind, auf.id) : null;
+    z.verlauf.push({ id: auf.id, neu: !stand || stand.box === 0 });
     app.innerHTML = `
       <section class="ueben" aria-labelledby="h-aufgabe">
         <div class="ueben__leiste">
           <button type="button" class="knopf leise-knopf knopf--klein" data-u="zurueck">← Zurück</button>
-          ${z.nachschub ? '' : tupfenHtml()}
+          ${z.endlos ? '' : tupfenHtml()}
           <button type="button" class="knopf leise-knopf knopf--klein tipp-knopf" data-u="tipp"><img src="bilder/tupfi.png?b=${C.bildStand}" alt="" width="40" height="40">Tipp</button>
         </div>
         <div class="ueben__flaeche">
@@ -79,6 +84,8 @@
     const h1 = app.querySelector('h1');
     h1.tabIndex = -1; h1.focus({ preventScroll: true });
     bedenkzeitStarten();
+    /* Hängt ein Kind heute an dieser Aufgabe, hilft Tupfi von selbst mit dem Bild */
+    if (stand && ZS.lernstand.fehlerHeute(stand) >= C.leitner.autoTippAbFehlern) { z.tippStufe = 1; tipp(); }
   }
 
   /* ---------- Bedenkzeit ---------- */
@@ -139,7 +146,8 @@
     /* Falsch: nach zwei anderen Aufgaben noch einmal, aber jede Aufgabe nur einmal extra */
     if (!richtig && !z.wiederholt.has(auf.id)) {
       z.wiederholt.add(auf.id);
-      z.liste.splice(Math.min(z.index + 3, z.liste.length), 0, auf);
+      if (z.waehler) z.warteschlange.push({ aufgabe: auf, ab: z.index + 3 });
+      else z.liste.splice(Math.min(z.index + 3, z.liste.length), 0, auf);
     }
     app.querySelectorAll('.ziffernfeld button, [data-u="tipp"]').forEach(b => { b.disabled = true; });
     app.querySelector('.aufgabe-fenster').classList.add(richtig ? 'ist-richtig' : 'ist-fast');
@@ -183,7 +191,11 @@
   function naechste() {
     clearTimeout(z.weiterTimer);
     z.index++;
-    if (z.index >= z.liste.length && z.nachschub) {
+    if (z.index >= z.liste.length && z.waehler) {
+      /* Zuerst eine fällige Wiederholung nach einem Fehler, sonst fragt die Lernlogik */
+      const i = z.warteschlange.findIndex(w => w.ab <= z.index);
+      z.liste.push(i >= 0 ? z.warteschlange.splice(i, 1)[0].aufgabe : z.waehler(z.verlauf));
+    } else if (z.index >= z.liste.length && z.nachschub) {
       /* Neue Aufgaben anhängen; nie zweimal dieselbe Aufgabe direkt hintereinander */
       const neu = z.nachschub();
       const letzte = z.liste[z.liste.length - 1];
@@ -205,8 +217,10 @@
 
   /* Startet eine Übung. aufgaben: Liste aus ZS.aufgaben. nachschub(): liefert neue Aufgaben (endlos).
      fertig(ergebnisse, abgebrochen) wird bei "Zurück" oder am Ende einer festen Liste gerufen. */
-  function starte({ aufgaben, nachschub = null, fertig }) {
-    z = { liste: aufgaben.slice(), index: 0, nachschub, fertig, ergebnisse: [], wiederholt: new Set() };
+  function starte({ aufgaben = [], waehler = null, nachschub = null, fertig }) {
+    z = { liste: aufgaben.slice(), index: 0, waehler, nachschub, endlos: !!(waehler || nachschub), fertig,
+      ergebnisse: [], wiederholt: new Set(), warteschlange: [], verlauf: [] };
+    if (!z.liste.length && waehler) z.liste.push(waehler([]));
     document.body.classList.add('uebt');
     zeigeAufgabe();
   }

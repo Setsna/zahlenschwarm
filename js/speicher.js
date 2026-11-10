@@ -44,7 +44,7 @@
     for (const reihe of C.reihenFolge) {
       for (let f = min; f <= max && zaehler < n; f++, zaehler++) {
         /* Vorläufiges Format, wird in Etappe 2/3 festgelegt. */
-        k.aufgaben[`mal:${f}:${reihe}`] = { box: 4, richtig: 3, falsch: 0 };
+        k.aufgaben[`mal:${f}:${reihe}`] = { box: 4, faelligTag: ZS.lernstand.tagNr() + 7, richtig: 3, falsch: 0 };
         k.schwarm[`mal:${f}:${reihe}`] = Date.now();
       }
     }
@@ -132,18 +132,20 @@
   }
 
   /* ---------- Lernstand je Aufgabe ---------- */
-  /* Merkt eine Antwort: wie oft richtig/falsch, wann zuletzt, letzte Denkzeit, ob ein Tipp genommen wurde.
-     Die Lernstufen (Leitner) kommen in Etappe 3 dazu. Gibt zurück, ob gespeichert wurde. */
-  function antwortMerken(id, { richtig, denkSek, tipp }) {
+  /* Merkt eine Antwort: Stufe und Fälligkeit (js/lernstand.js), wie oft richtig/falsch, wann zuletzt,
+     letzte Denkzeit, ob ein Tipp genommen wurde. Gibt zurück, ob gespeichert wurde. */
+  function antwortMerken(id, { richtig, zuegig, denkSek, tipp }) {
     const k = aktiv();
     if (!k) return false;
-    const e = istObjekt(k.aufgaben[id]) ? k.aufgaben[id] : {};
-    e.richtig = (Number(e.richtig) || 0) + (richtig ? 1 : 0);
-    e.falsch = (Number(e.falsch) || 0) + (richtig ? 0 : 1);
-    e.zuletzt = Date.now();
-    e.denkSek = denkSek;
-    e.tipp = !!tipp;
-    k.aufgaben[id] = e;
+    const L = ZS.lernstand, heute = L.tagNr();
+    const e = L.eintrag(k, id, heute);
+    const n = L.bewerten(e, { richtig, zuegig, tipp }, heute);
+    n.richtig = e.richtig + (richtig ? 1 : 0);
+    n.falsch = e.falsch + (richtig ? 0 : 1);
+    n.zuletzt = Date.now();
+    n.denkSek = denkSek;
+    n.tipp = !!tipp;
+    k.aufgaben[id] = n;
     return speichern();
   }
 

@@ -138,6 +138,13 @@ button.bereich:active { transform: scale(0.97); }
 .bereich__text { font-size: var(--klein); }
 .bereich__status { margin-top: .4em; padding: .15em .9em; border-radius: 999px; background: var(--weiss); color: var(--navy); font-weight: 700; font-size: var(--klein); }
 
+/* Tupfen auf den Reihen-Kacheln: gefüllt sicher, halb übt, leer neu */
+.reihen-tupfen { display: grid; grid-template-columns: repeat(5, auto); gap: max(3px, calc(6 * var(--s))); margin-top: .35em; }
+.rt { display: block; width: max(8px, calc(14 * var(--s))); aspect-ratio: 1; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.75); }
+.rt--sicher { background: var(--tupfi); border-color: var(--tupfi); }
+.rt--uebt { background: linear-gradient(90deg, rgba(255, 255, 255, 0.85) 50%, transparent 50%); }
+.heute { text-align: center; align-items: center; border: 3px solid var(--tupfi); }
+
 /* ---------- Für Lehrkräfte und Eltern ---------- */
 .erwachsene { padding: 0; gap: 0; }
 .erwachsene summary {

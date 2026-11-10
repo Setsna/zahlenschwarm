@@ -47,6 +47,9 @@
     if (!antwort.richtig) {
       n.box = 1;
       n.faelligTag = heute;
+      /* Fehler am selben Tag zählen (ab 3 zeigt die App von selbst Tipp 2) */
+      n.fehlerHeute = (e.fehlerTag === heute ? (Number(e.fehlerHeute) || 0) : 0) + 1;
+      n.fehlerTag = heute;
     } else if (antwort.zuegig && !antwort.tipp && (e.box === 0 || istFaellig(e, heute))) {
       n.box = Math.min(MAX, e.box + 1);
       n.faelligTag = heute + abstand(n.box);
@@ -61,9 +64,10 @@
   /* Wählt die nächste Aufgabe.
      kandidaten: Aufgaben (aus ZS.aufgaben), kind: Spielstand, verlauf: [{ id, neu }] zuletzt gezeigt (neueste am Ende).
      Reihenfolge: fällige (niedrigste Stufe zuerst) – neue (höchstens 3 in den letzten 10) – Kontrolle (am längsten nicht dran).
-     Nie eine der letzten zwei Aufgaben, solange es andere gibt. */
+     Bremse (Ingo, 10.11.2026): keine der letzten drei Aufgaben, also höchstens jede 4. Aufgabe dieselbe.
+     Die gezielte Wiederholung nach einem Fehler macht ueben.js selbst (nach zwei anderen). */
   function naechste({ kandidaten, kind, verlauf = [], heute = tagNr(), zufall = Math.random }) {
-    const zuletzt = new Set(verlauf.slice(-2).map(v => v.id));
+    const zuletzt = new Set(verlauf.slice(-C.leitner.mindestAbstand).map(v => v.id));
     let pool = kandidaten.filter(a => !zuletzt.has(a.id));
     if (!pool.length) pool = kandidaten.slice();
     const mit = pool.map(a => ({ a, e: eintrag(kind, a.id, heute) }));
@@ -85,7 +89,10 @@
     } else {
       /* Kontrolle: nichts fällig, keine neuen erlaubt. Am längsten nicht geübt zuerst. */
       const alt = mit.filter(x => x.e.box > 0).sort((p, q) => (p.e.zuletzt || 0) - (q.e.zuletzt || 0));
-      wahl = alt.length ? alt[0] : zufaellig(mit);
+      /* Randfall in der Anlaufphase: alle geübten Aufgaben sind unter den letzten drei, übrig sind nur neue.
+         Die Bremse hat Vorrang, dann kommt ausnahmsweise noch eine neue Aufgabe. (Ein Kind mit vielen
+         Fehlern hat genug fällige Aufgaben, bei ihm tritt der Fall nicht auf.) */
+      wahl = alt.length ? alt[0] : (neue.length ? zufaellig(neue) : zufaellig(mit));
     }
     return { aufgabe: wahl.a, neu: wahl.e.box === 0 };
   }
@@ -118,5 +125,8 @@
     return { art: 'fertig', reihe: staende.length ? staende[0].nr : null };
   }
 
-  ZS.lernstand = { tagNr, eintrag, istFaellig, status, bewerten, naechste, reiheStand, empfehlung, SICHER_AB };
+  /* Wie oft wurde die Aufgabe heute schon falsch gerechnet? */
+  const fehlerHeute = (e, heute = tagNr()) => e.fehlerTag === heute ? (Number(e.fehlerHeute) || 0) : 0;
+
+  ZS.lernstand = { fehlerHeute, tagNr, eintrag, istFaellig, status, bewerten, naechste, reiheStand, empfehlung, SICHER_AB };
 })();
