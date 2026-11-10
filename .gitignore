@@ -1,0 +1,12 @@
+# Startstand: alles sperren, nur freigeben, was ins Netz soll.
+# Neue Dateien oder Ordner auf oberster Ebene hier eintragen.
+/*
+!/.gitignore
+!/index.html
+!/impressum.html
+!/datenschutz.html
+!/manifest.webmanifest
+!/css/
+!/js/
+!/bilder/
+!/schriften/

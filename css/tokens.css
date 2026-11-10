@@ -1,0 +1,59 @@
+/* Zahlenschwarm: alle Farben, Schriften, Größen und Abstände an einer Stelle.
+   Look wie bei Riff-Akten (gemalter Unterwassergrund, gläserne Fenster, Serifen-Überschriften),
+   eigener Akzent ist Tupfis Gelb.
+   Alle Größen sind Entwurfspixel mal --s. Entwurfsfläche: iPad hochkant, 1088 px breit.
+   Feste Untergrenzen nur für Tippflächen (48 px) und Text (15–18 px). */
+:root {
+  --breite: 100vw;
+  --s: calc(min(var(--breite), 1088px) / 1088);
+
+  /* Farben */
+  --tiefe: #0e2f45;                      /* dunkles Wasser, Grund hinter allem */
+  --navy: #0b3155;                       /* Text auf hellen Lichthöfen und weißen Knöpfen */
+  --navy-weich: #133c5a;
+  --weiss: #ffffff;
+  --tupfi: #f5c842;                      /* Akzent, nur mit Navy-Text */
+  --tupfi-hell: #fff4d6;
+  --glas-kante: rgba(255, 255, 255, 0.5);
+  --glas-glanz: rgba(255, 255, 255, 0.62);
+  --glas-schatten: rgba(3, 20, 35, 0.38);
+  /* Glas, auf dem weißer Text steht: mindestens 0.7 Deckkraft, damit 4.5:1 auch über hellem Licht hält */
+  --glas-text-oben: rgba(10, 52, 84, 0.72);
+  --glas-text-unten: rgba(10, 52, 84, 0.82);
+  --hof: rgba(228, 243, 245, 0.88);      /* Lichthof hinter Navy-Überschriften */
+  --hof-rand: rgba(228, 243, 245, 0.5);
+  --gut: #0b6b4f;
+  --fast: #8a4b00;
+  --meldung-grund: #fff4d6;
+
+  /* Schriften */
+  --serif: 'Libre Caslon Text', Georgia, 'Times New Roman', serif;   /* Überschriften */
+  --sans: 'Andika', 'Trebuchet MS', system-ui, sans-serif;           /* Text */
+  --ziffern: 'Andika', 'Trebuchet MS', system-ui, sans-serif;        /* Zahlen, Prüfung mit tools/ziffern.html steht aus */
+
+  --text: max(17px, calc(27 * var(--s)));
+  --klein: max(15px, calc(21 * var(--s)));
+  --h1: calc(89 * var(--s));
+  --h2: max(22px, calc(40 * var(--s)));
+  --wortmarke: max(20px, calc(31 * var(--s)));
+
+  /* Maße */
+  --ziel: max(48px, calc(72 * var(--s)));        /* Mindesthöhe für alles, was man antippt */
+  --ziel-gross: max(56px, calc(84 * var(--s)));  /* Hauptknöpfe */
+  --abstand: calc(24 * var(--s));
+  --abstand-gross: calc(48 * var(--s));
+  --ecke: calc(64 * var(--s));
+  --fenster-breite: min(100% - 32px, calc(860 * var(--s)));
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: dark;   /* wie Riff-Akten: kein eigener Dunkelmodus, der Look ist schon Unterwasser */
+}
+
+/* iPad quer, Laptop, Tafel: Maßstab an Höhe und Breite ausrichten */
+@media (orientation: landscape) and (min-width: 820px) {
+  :root { --s: min(calc(100svh / 1010), calc(var(--breite) / 1360)); }
+}
+/* Handy hochkant */
+@media (max-width: 600px) and (orientation: portrait) {
+  :root { --s: calc(var(--breite) / 600); }
+}
