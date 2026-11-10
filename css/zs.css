@@ -394,3 +394,11 @@ dialog .knopfreihe { margin-top: var(--abstand); }
 @media (orientation: portrait) and (min-width: 601px) {
   .ziffernfeld { --taste: max(72px, calc(118 * var(--s))); --taste-abstand: max(12px, calc(18 * var(--s))); }
 }
+/* "← Zurück" oben links auf allen Unterseiten, wie in der Üben-Leiste */
+.zurueck-oben { width: min(100%, calc(1180 * var(--s))); display: flex; justify-content: flex-start; margin-bottom: calc(-24 * var(--s)); }
+/* Erklärung der Tupfen unter den Reihen-Kacheln */
+.tupfen-legende { display: flex; flex-wrap: wrap; justify-content: center; gap: .3em 1.2em; color: var(--navy); font-size: var(--klein); }
+.legende-punkt { display: inline-flex; align-items: center; gap: .4em; }
+.tupfen-legende .rt { display: inline-block; width: .85em; border-color: var(--navy); }
+.tupfen-legende .rt--sicher { border-color: var(--fisch-mal-rand); }
+.tupfen-legende .rt--uebt { background: linear-gradient(90deg, var(--navy) 50%, transparent 50%); }

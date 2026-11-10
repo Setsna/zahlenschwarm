@@ -26,6 +26,10 @@
   /* Kopf jeder Ansicht: Wortmarke, Zierlinie (drei Tupfen wie bei Tupfi), große Überschrift */
   const ZIER = `<svg class="zier" viewBox="0 0 60 16" aria-hidden="true" focusable="false"><path d="M2 8H18M42 8H58" style="stroke:var(--zier)" stroke-width="1.6" stroke-linecap="round"/><circle cx="23" cy="8" r="2.6" style="fill:var(--zier)"/><circle cx="30" cy="8" r="2.6" style="fill:var(--zier)"/><circle cx="37" cy="8" r="2.6" style="fill:var(--zier)"/></svg>`;
   const TUPFI = `<img class="tupfi" src="bilder/tupfi.png?b=${ZS.config.bildStand}" alt="" width="256" height="256">`;
+  /* "← Zurück" oben links, an derselben Stelle wie beim Üben (Ingo, 11.11.2026) */
+  const zurueckOben = () => '<div class="zurueck-oben"><button type="button" class="knopf leise-knopf knopf--klein" data-aktion="start">← Zurück</button></div>';
+  /* Erklärung der Tupfen auf den Reihen-Kacheln (Ingo, 11.11.2026) */
+  const TUPFEN_LEGENDE = '<p class="tupfen-legende hof"><span class="legende-punkt"><i class="rt rt--sicher" aria-hidden="true"></i>sitzt sicher</span><span class="legende-punkt"><i class="rt rt--uebt" aria-hidden="true"></i>übst du noch</span><span class="legende-punkt"><i class="rt rt--neu" aria-hidden="true"></i>neu</span></p>';
   function kopf(titel, text = '', mitTupfi = true) {
     return `<header class="kopf">
         <a class="wortmarke" href="./">Zahlenschwarm${ZIER}</a>
@@ -138,12 +142,14 @@
       ? `<button type="button" class="fenster bereich gemischt" data-aktion="gemischt" data-art="${art}"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Aufgaben aus deinen Reihen: ${begonnen.map(A_.kurz).join(', ')}</span></button>`
       : `<div class="fenster bereich gemischt bereich--bald"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Geht los, sobald du eine Reihe geübt hast.</span></div>`;
     zeigen(`
+      ${zurueckOben()}
       ${kopf(A_.titel, A_.frage, false)}
       <section class="bereiche-block" aria-label="Reihen">
         <ul class="bereiche reihen">${kacheln}</ul>
+        ${TUPFEN_LEGENDE}
         ${gemischt}
       </section>
-      <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, A_.titel);
+`, A_.titel);
   }
 
   /* ---------- Plus und Minus: zwei Kacheln mit je 6 Tupfen (ein Tupfen je Format) ---------- */
@@ -159,12 +165,14 @@
       ? `<button type="button" class="fenster bereich gemischt" data-aktion="pm-gemischt"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Aufgaben aus: ${begonnen.map(op => PM[op].name).join(', ')}</span></button>`
       : `<div class="fenster bereich gemischt bereich--bald"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Geht los, sobald du Plus oder Minus geübt hast.</span></div>`;
     zeigen(`
+      ${zurueckOben()}
       ${kopf('Plus und Minus', 'Rechnen im Kopf bis 1000. Was übst du heute?', false)}
       <section class="bereiche-block" aria-label="Plus und Minus">
         <ul class="bereiche zwei">${kacheln}</ul>
+        ${TUPFEN_LEGENDE}
         ${gemischt}
       </section>
-      <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, 'Plus und Minus');
+`, 'Plus und Minus');
   }
 
   /* Endlos üben (Ingo: kein Rundenende), Auswahl nach Lernstand. "Zurück" führt zurück.
@@ -173,9 +181,14 @@
   const reihenTitel = (art, r) => art === 'geteilt' ? `Geteilt durch ${r}` : `${r}er-Reihe`;
   function rundeStarten(kandidaten, zurueck, titel = '') {
     const neuInReihenfolge = kandidaten.some(a => a.platzhalter);
+    melden('');
     ZS.ueben.starte({
       waehler: verlauf => ZS.aufgaben.konkret(ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf, neuInReihenfolge }).aufgabe),
-      fertig: () => zurueck(),
+      fertig: (ergebnisse, abgebrochen, neu = {}) => {
+        zurueck();
+        const n = neu.fische || 0;
+        if (n) melden(`Schön geübt! ${n === 1 ? '1 neuer Fisch' : `${n} neue Fische`} für deinen Schwarm.`);
+      },
       titel
     });
   }
@@ -268,7 +281,8 @@
     const kann = T.kannListe(k);
     const zeit = b => Number(k.zeit[b]) || 0;
     zeigen(`
-      ${kopf('Mein Tauchbuch', `Hier siehst du, was du schon kannst${k.name ? `, ${esc(k.name)}` : ''}. Es gibt keine Punkte und keine Rangliste.`, false)}
+      ${zurueckOben()}
+      ${kopf('Mein Tauchbuch', `Hier siehst du, was du schon kannst${k.name ? `, ${esc(k.name)}` : ''}.`, false)}
       <section class="fenster tauchbuch" aria-labelledby="h-schwarm">
         <h2 id="h-schwarm">Mein Schwarm</h2>
         ${fische.length
@@ -304,7 +318,6 @@
         <p><button type="button" class="knopf leise-knopf" data-aktion="loeschen-frage"${S.istVorschau ? ' disabled' : ''}>Alles löschen / Neu anfangen</button></p>
         ${S.istVorschau ? '<p class="leise">In der Vorschau wird nichts gelöscht.</p>' : ''}
       </section>
-      <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>
       <dialog class="dialog" id="loeschen-dialog" aria-labelledby="ld-titel" aria-describedby="ld-text">
         <h2 id="ld-titel">Wirklich alles löschen?</h2>
         <p id="ld-text">Alles von ${esc(k.name)} wird gelöscht: Schwarm, Stempel, Lernzeit und Lernstand. Das geht nicht rückgängig. Die anderen Kinder auf diesem Gerät bleiben.</p>

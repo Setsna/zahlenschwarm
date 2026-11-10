@@ -192,6 +192,7 @@
     const eintrag = { id: auf.id, richtig, denkSek: Math.round(denkSek * 10) / 10, tipp: z.tippStufe > 0, zuegig };
     z.ergebnisse.push(eintrag);
     const gemerkt = ZS.speicher.antwortMerken(auf.id, eintrag) || { ok: false, fische: [], stempel: [] };
+    z.neueFische += gemerkt.fische.length;
     if (!gemerkt.ok && !ZS.speicher.istVorschau) {
       const m = document.getElementById('meldung');
       if (m) m.textContent = 'Dein Stand konnte gerade nicht gespeichert werden. Bitte sag deiner Lehrkraft Bescheid.';
@@ -280,17 +281,17 @@
     if (!z) return;
     clearTimeout(z.weiterTimer); clearTimeout(z.bedenkTimer);
     uhrBuchen();
-    const { fertig, ergebnisse } = z;
+    const { fertig, ergebnisse, neueFische } = z;
     z = null;
     document.body.classList.remove('uebt');
-    if (fertig) fertig(ergebnisse, abgebrochen);
+    if (fertig) fertig(ergebnisse, abgebrochen, { fische: neueFische });
   }
 
   /* Startet eine Übung. aufgaben: Liste aus ZS.aufgaben. nachschub(): liefert neue Aufgaben (endlos).
      fertig(ergebnisse, abgebrochen) wird bei "Zurück" oder am Ende einer festen Liste gerufen. */
   function starte({ aufgaben = [], waehler = null, nachschub = null, fertig, titel = '' }) {
     z = { liste: aufgaben.slice(), index: 0, waehler, nachschub, endlos: !!(waehler || nachschub), fertig, titel,
-      ergebnisse: [], wiederholt: new Set(), warteschlange: [], verlauf: [] };
+      ergebnisse: [], wiederholt: new Set(), warteschlange: [], verlauf: [], neueFische: 0 };
     if (!z.liste.length && waehler) z.liste.push(waehler([]));
     document.body.classList.add('uebt');
     zeigeAufgabe();
