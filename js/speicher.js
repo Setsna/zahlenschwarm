@@ -1,7 +1,6 @@
 /* Zahlenschwarm: Speicher im Browser.
    - Alles bleibt in localStorage dieses Browsers, je Kind ein Eintrag.
    - Welches Kind in diesem Tab übt, steht in sessionStorage.
-   - Sichern/Wiederherstellen als Datei (JSON).
    - ?vorschau=N zeigt einen Beispielstand mit N sicheren Aufgaben und speichert nichts. */
 (() => {
   'use strict';
@@ -132,46 +131,6 @@
     try { sessionStorage.removeItem(WER); } catch (e) { /* egal */ }
   }
 
-  /* ---------- Sichern als Datei ---------- */
-  function exportText(kind = aktiv()) {
-    if (!kind) return null;
-    return JSON.stringify({
-      app: 'zahlenschwarm',
-      schema: C.speicher.schema,
-      gesichert: new Date().toISOString(),
-      kind
-    }, null, 1);
-  }
-
-  function exportDateiname(kind = aktiv()) {
-    const d = new Date();
-    const datum = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const name = (kind ? kind.name : 'stand').normalize('NFC').replace(/[^\p{L}\p{N}-]+/gu, '-').replace(/^-+|-+$/g, '') || 'stand';
-    return `zahlenschwarm-${name}-${datum}.json`;
-  }
-
-  /* Prüft eine Sicherungsdatei, ohne etwas zu ändern. */
-  function importPruefen(text) {
-    let daten;
-    try { daten = JSON.parse(text); } catch (e) { return { ok: false, grund: 'Diese Datei kann ich nicht lesen. Ist es eine Sicherung vom Zahlenschwarm?' }; }
-    if (!istObjekt(daten) || daten.app !== 'zahlenschwarm') return { ok: false, grund: 'Das ist keine Sicherung vom Zahlenschwarm.' };
-    if (typeof daten.schema !== 'number' || daten.schema > C.speicher.schema) return { ok: false, grund: 'Diese Sicherung ist von einer neueren Version. Lade die Seite neu und versuche es noch einmal.' };
-    if (!kindGueltig(daten.kind)) return { ok: false, grund: 'In der Datei fehlt der Spielstand.' };
-    const kind = normalisiere(daten.kind);
-    const vorhanden = kinder.find(k => k.id === kind.id) || null;
-    const namensgleich = !vorhanden && kinder.find(k => gleicherName(k.name, kind.name)) || null;
-    return { ok: true, kind, vorhanden, namensgleich, gesichert: daten.gesichert || null };
-  }
-
-  /* Übernimmt ein geprüftes Kind. Gleiche Id: der Stand hier wird ersetzt. */
-  function importUebernehmen(kind) {
-    if (istVorschau) return false;
-    const i = kinder.findIndex(k => k.id === kind.id);
-    if (i >= 0) kinder[i] = kind; else kinder.push(kind);
-    waehlen(kind.id);
-    return speichern();
-  }
-
   function aktiv() { return kinder.find(k => k.id === aktivId) || null; }
 
   laden();
@@ -187,10 +146,6 @@
     anlegen,
     waehlen,
     abmelden,
-    speichern,
-    exportText,
-    exportDateiname,
-    importPruefen,
-    importUebernehmen
+    speichern
   };
 })();

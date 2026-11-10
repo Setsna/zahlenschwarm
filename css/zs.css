@@ -110,6 +110,12 @@ img { display: block; max-width: 100%; height: auto; }
 }
 .fenster h2 { font-family: var(--serif); font-weight: 500; font-size: var(--h2); line-height: 1.1; }
 .fenster .leise { opacity: 0.92; font-size: var(--klein); }
+/* Fenster mit Formular oder Namensliste: alles mittig wie der Kopf darüber */
+.fenster.mitte { align-items: center; text-align: center; }
+.mitte form { width: 100%; display: flex; flex-direction: column; align-items: center; gap: calc(18 * var(--s)); }
+.mitte input[type="text"] { margin-top: 0; text-align: center; }
+.mitte .knopfreihe { justify-content: center; }
+.mitte .kinder-liste { width: 100%; }
 
 /* ---------- Bereiche auf der Startseite ---------- */
 .bereiche-block { width: var(--fenster-breite); display: flex; flex-direction: column; align-items: center; gap: var(--abstand); text-align: center; }
@@ -184,7 +190,7 @@ input[type="text"] {
   box-shadow: inset 0 2px 6px rgba(3, 20, 35, 0.18);
 }
 .hinweis-feld { min-height: 1.4em; font-weight: 700; color: var(--tupfi); }
-.hinweis-feld:empty { min-height: 0; }
+.hinweis-feld:empty { display: none; }
 
 /* ---------- Meldungen ---------- */
 .meldung-bereich { display: flex; justify-content: center; padding: 0 16px; }
