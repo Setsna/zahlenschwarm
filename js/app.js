@@ -338,22 +338,24 @@
       <details class="fenster erwachsene">
         <summary><h2 id="h-erw">Für Lehrkräfte und Eltern</h2></summary>
         <div class="erwachsene__inhalt">
-          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000 für die Klassen 3 und 4. Er wird gerade gebaut; die Übungen kommen Schritt für Schritt dazu.</p>
+          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000.</p>
 
           <h3>So ist das Üben gedacht</h3>
-          <p>Jede Aufgabe hat ihren eigenen Lernstand. Was ein Kind noch nicht sicher kann, kommt öfter und auch an späteren Tagen wieder. Was es sicher kann, kommt seltener. Bei einem Fehler zeigt die Seite einen Rechenweg, zum Beispiel über eine leichte Kernaufgabe, statt nur die Lösung. Eine Uhr gibt es nicht. Die Seite merkt sich nur, wie lange ein Kind bis zur ersten getippten Ziffer überlegt. So erkennt sie, ob eine Aufgabe schon auswendig sitzt oder noch abgeleitet wird.</p>
+          <p>Jede Aufgabe hat ihren eigenen Lernstand. Was ein Kind noch nicht sicher kann, kommt öfter und auch an späteren Tagen wieder. Was es sicher kann, kommt seltener. Als sicher gilt eine Aufgabe erst, wenn das Kind sie an mehreren Tagen zügig und ohne Tipp gelöst hat. Bei Plus und Minus zählt der Lernstand je Aufgabenart, zum Beispiel „Einer mit Übergang“.</p>
+          <p>Bei einem Fehler zeigt die Seite einen Rechenweg Schritt für Schritt, zum Beispiel über eine leichte Kernaufgabe, statt nur die Lösung. Eine Uhr gibt es nicht. Die Seite merkt sich nur, wie lange ein Kind bis zur ersten getippten Ziffer überlegt. So erkennt sie, ob eine Aufgabe schon auswendig sitzt oder noch abgeleitet wird.</p>
 
           <div class="tabelle-rahmen">
             <table>
               <caption class="nurvorlesen">Prinzip und Umsetzung</caption>
               <thead><tr><th scope="col">Prinzip</th><th scope="col">Umsetzung im Zahlenschwarm</th></tr></thead>
               <tbody>
-                <tr><th scope="row">Üben nach Lernstand</th><td>Jede Aufgabe wandert durch fünf Stufen. Unsichere Aufgaben kommen in derselben Runde und an den nächsten Tagen wieder.</td></tr>
-                <tr><th scope="row">Verstehen vor Auswendiglernen</th><td>Fehler werden mit Kernaufgaben (mal 2, mal 5, mal 10), Tausch- und Umkehraufgaben erklärt.</td></tr>
+                <tr><th scope="row">Üben nach Lernstand</th><td>Jede Aufgabe wandert durch fünf Stufen. Eine falsche Aufgabe kommt kurz danach noch einmal und an den nächsten Tagen wieder.</td></tr>
+                <tr><th scope="row">Verstehen vor Auswendiglernen</th><td>Fehler werden mit Kernaufgaben (mal 2, mal 5, mal 10), Tausch- und Umkehraufgaben erklärt, Plus und Minus in kleinen Schritten. Gestufte Tipps helfen, ohne die Lösung zu verraten.</td></tr>
                 <tr><th scope="row">Kein Zeitdruck</th><td>Keine sichtbare Uhr, kein Countdown. Das Kind übt, so lange es möchte, und hört über „Zurück“ auf.</td></tr>
-                <tr><th scope="row">Erfolg sichtbar machen</th><td>Der eigene Fischschwarm wächst mit jeder sicheren Aufgabe. Fische gehen nie verloren.</td></tr>
+                <tr><th scope="row">Erfolg sichtbar machen</th><td>Im Tauchbuch wächst ein Fischschwarm: ein Fisch für jede Aufgabe, die zum ersten Mal sicher ist. Für jede ganze Reihe gibt es einen Stempel. Fische und Stempel gehen nie verloren.</td></tr>
+                <tr><th scope="row">Sich selbst einschätzen</th><td>Bei jedem Stempel fragt Tupfi, wie sich die Reihe anfühlt: „Ganz leicht“, „Geht gut“ oder „Noch wackelig“. Die Antwort steht nur im Tauchbuch und wird nicht bewertet.</td></tr>
                 <tr><th scope="row">Keine Vergleiche</th><td>Keine Punkte, keine Rangliste, kein Wettbewerb zwischen Kindern.</td></tr>
-                <tr><th scope="row">Lehrplan</th><td>Lehrplan Thüringen Mathematik Grundschule 2026, Leitidee Zahl und Operation: Grundaufgaben aus Kernaufgaben ableiten und gedächtnismäßig wiedergeben.</td></tr>
+                <tr><th scope="row">Lehrplan</th><td>Lehrplan Thüringen Mathematik Grundschule 2026, Leitidee Zahl und Operation: Grundaufgaben aus Kernaufgaben ableiten, Tausch- und Umkehraufgaben nutzen, mündlich rechnen. Lernkompetenzen: eigene Lernfortschritte einschätzen.</td></tr>
               </tbody>
             </table>
           </div>
@@ -364,10 +366,11 @@
             <li>Über Fehler sprechen statt sie zu tadeln. Fragen Sie: „Wie hast du gerechnet?“</li>
             <li>Das Einmaleins steckt im Alltag: Eierkartons, Fenster, Treppenstufen, Taschengeld.</li>
             <li>Nicht vorsagen. Geben Sie lieber einen Tipp, zum Beispiel: „Was ist 5 mal 8?“</li>
+            <li>Schauen Sie gemeinsam ins Tauchbuch. Dort sieht Ihr Kind, was es schon sicher kann. Fragen Sie nach, wenn dort „Noch wackelig“ steht.</li>
           </ul>
 
           <h3>Daten</h3>
-          <p>Es gibt kein Konto und keine Anmeldung. Gespeichert werden nur der Vorname und der Lernstand, und zwar nur in diesem Browser auf diesem Gerät. Nichts wird an einen Server geschickt. Mehr steht unter <a href="datenschutz.html">Datenschutz</a>.</p>
+          <p>Es gibt kein Konto und keine Anmeldung. Gespeichert werden nur der Vorname, der Lernstand, der Schwarm, die Stempel und die Lernzeit, und zwar nur in diesem Browser auf diesem Gerät. Nichts wird an einen Server geschickt. Im Tauchbuch kann ein Kind seinen Stand ganz löschen. Mehr steht unter <a href="datenschutz.html">Datenschutz</a>.</p>
         </div>
       </details>`;
   }
