@@ -120,31 +120,13 @@
       <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, 'Einmaleins');
   }
 
+  /* Endlos üben (Ingo: kein Rundenende). "Zurück" führt zur Reihen-Auswahl. */
   function rundeStarten(r) {
     ZS.ueben.starte({
       aufgaben: ZS.aufgaben.runde(r),
-      fertig: (ergebnisse, abgebrochen) => abgebrochen ? ansichtReihen() : ansichtRundenende(r, ergebnisse)
+      nachschub: () => ZS.aufgaben.runde(r),
+      fertig: () => ansichtReihen()
     });
-  }
-
-  /* ---------- Rundenende: keine Punkte, keine Prozente ---------- */
-  function ansichtRundenende(r, ergebnisse) {
-    const ids = [...new Set(ergebnisse.map(e => e.id))];
-    const uebtNoch = ids.filter(id => ergebnisse.some(e => e.id === id && !e.richtig)).map(ZS.aufgaben.ausId).filter(Boolean);
-    const inhalt = uebtNoch.length
-      ? `<h2 id="h-noch">Diese Aufgaben übst du noch</h2>
-         <ul class="noch-liste">${uebtNoch.map(a => `<li>${esc(a.text)} = ${a.loesung}</li>`).join('')}</ul>
-         <p>Sie kommen beim nächsten Mal wieder.</p>`
-      : `<h2 id="h-noch">Alles beim ersten Mal richtig.</h2><p>Stark! Diese Reihe sitzt schon gut.</p>`;
-    zeigen(`
-      ${kopf('Geschafft!', `Du hast ${ids.length} Aufgaben der ${r}er-Reihe gerechnet.`)}
-      <section class="fenster mitte" aria-labelledby="h-noch">
-        ${inhalt}
-        <p class="knopfreihe">
-          <button type="button" class="knopf haupt" data-aktion="reihe" data-r="${r}">Noch eine Runde</button>
-          <button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button>
-        </p>
-      </section>`, 'Geschafft');
   }
 
   /* ---------- Für Lehrkräfte und Eltern (aufklappbar, am Ende jeder Startansicht) ---------- */

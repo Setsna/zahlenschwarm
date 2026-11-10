@@ -4,7 +4,8 @@
    - "Prüfen" ist kurz gesperrt (Bedenkzeit, config.js).
    - Bedienbar mit Finger und Tastatur (Ziffern, Rücktaste, Enter).
    - Jede Antwort wird sofort gespeichert (ZS.speicher.antwortMerken).
-   - Eine falsche Aufgabe kommt in derselben Runde nach zwei anderen noch einmal (je Aufgabe einmal). */
+   - Eine falsche Aufgabe kommt nach zwei anderen noch einmal (je Aufgabe einmal).
+   - Mit "nachschub" kommen endlos Aufgaben (Ingo: kein Rundenende). Verlassen nur über "Zurück". */
 (() => {
   'use strict';
   const C = ZS.config, A = ZS.aufgaben;
@@ -13,6 +14,10 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   let z = null; /* Zustand der laufenden Übung */
+
+  /* Text sicher einsetzen und jede Rechnung wie "4 + 4 = 8" zusammenhalten, damit sie nicht umbricht */
+  const RECHNUNG = /(\d+(?:\s[+·−:]\s\d+)+(?:\s=\s\d+)?)/g;
+  const mitRechnungen = text => esc(text).replace(RECHNUNG, '<span class="rechnung">$1</span>');
 
   function ansagen(text) {
     live.textContent = '';
@@ -57,8 +62,8 @@
     app.innerHTML = `
       <section class="ueben" aria-labelledby="h-aufgabe">
         <div class="ueben__leiste">
-          <button type="button" class="knopf leise-knopf knopf--klein" data-u="pause">Pause</button>
-          ${tupfenHtml()}
+          <button type="button" class="knopf leise-knopf knopf--klein" data-u="zurueck">← Zurück</button>
+          ${z.nachschub ? '' : tupfenHtml()}
           <button type="button" class="knopf leise-knopf knopf--klein tipp-knopf" data-u="tipp"><img src="bilder/tupfi.png?b=${C.bildStand}" alt="" width="40" height="40">Tipp</button>
         </div>
         <div class="ueben__flaeche">
@@ -144,11 +149,11 @@
       rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p>`, `Richtig! ${auf.text} = ${auf.loesung}.`);
       z.weiterTimer = setTimeout(naechste, C.pauseNachRichtigSek * 1000);
     } else if (richtig) {
-      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p><p class="rueck__weg">So geht es noch schneller: ${esc(erkl[0])}</p>${weiterKnopf()}`,
+      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p><p class="rueck__weg">So geht es noch schneller: ${mitRechnungen(erkl[0])}</p>${weiterKnopf()}`,
         `Richtig! So geht es noch schneller: ${erkl[0]}`);
       fokusWeiter();
     } else {
-      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><ul class="rueck__weg">${erkl.map(t => `<li>${esc(t)}</li>`).join('')}</ul>${weiterKnopf()}`,
+      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><ul class="rueck__weg">${erkl.map(t => `<li>${mitRechnungen(t)}</li>`).join('')}</ul>${weiterKnopf()}`,
         `Fast! ${auf.text} = ${auf.loesung}. ${erkl.join(' ')}`);
       fokusWeiter();
     }
@@ -164,7 +169,7 @@
     const box = app.querySelector('#tipp');
     box.hidden = false;
     /* Nur der aktuelle Tipp, damit das Ziffernfeld im Bild bleibt */
-    box.innerHTML = `<p class="tipp__kopf">Tupfis Tipp <span class="tipp__nr">${z.tippStufe} von 3</span></p><div class="tipp__stufe"><p>${esc(s.text)}</p>${s.bild ? schwarmBild(s.bild.schwaerme, s.bild.je) : ''}</div>`;
+    box.innerHTML = `<p class="tipp__kopf">Tupfis Tipp <span class="tipp__nr">${z.tippStufe} von 3</span></p><div class="tipp__stufe"><p>${mitRechnungen(s.text)}</p>${s.bild ? schwarmBild(s.bild.schwaerme, s.bild.je) : ''}</div>`;
     const k = app.querySelector('[data-u="tipp"]');
     if (z.tippStufe >= 3) { k.disabled = true; k.lastChild.textContent = 'Keine Tipps mehr'; }
     else k.lastChild.textContent = 'Noch ein Tipp';
@@ -175,10 +180,17 @@
   function naechste() {
     clearTimeout(z.weiterTimer);
     z.index++;
+    if (z.index >= z.liste.length && z.nachschub) {
+      /* Neue Aufgaben anhängen; nie zweimal dieselbe Aufgabe direkt hintereinander */
+      const neu = z.nachschub();
+      const letzte = z.liste[z.liste.length - 1];
+      if (neu.length > 1 && letzte && neu[0].id === letzte.id) neu.push(neu.shift());
+      z.liste.push(...neu);
+    }
     if (z.index >= z.liste.length) beenden(false);
     else zeigeAufgabe();
   }
-  /* abgebrochen: true bei Pause, false am Ende der Runde */
+  /* abgebrochen: true bei "Zurück", false wenn eine feste Liste zu Ende ist */
   function beenden(abgebrochen = true) {
     if (!z) return;
     clearTimeout(z.weiterTimer); clearTimeout(z.bedenkTimer);
@@ -188,10 +200,10 @@
     if (fertig) fertig(ergebnisse, abgebrochen);
   }
 
-  /* Startet eine Übung. aufgaben: Liste aus ZS.aufgaben.
-     fertig(ergebnisse, abgebrochen) wird am Ende der Runde oder bei Pause gerufen. */
-  function starte({ aufgaben, fertig }) {
-    z = { liste: aufgaben.slice(), index: 0, fertig, ergebnisse: [], wiederholt: new Set() };
+  /* Startet eine Übung. aufgaben: Liste aus ZS.aufgaben. nachschub(): liefert neue Aufgaben (endlos).
+     fertig(ergebnisse, abgebrochen) wird bei "Zurück" oder am Ende einer festen Liste gerufen. */
+  function starte({ aufgaben, nachschub = null, fertig }) {
+    z = { liste: aufgaben.slice(), index: 0, nachschub, fertig, ergebnisse: [], wiederholt: new Set() };
     document.body.classList.add('uebt');
     zeigeAufgabe();
   }
@@ -207,7 +219,7 @@
     else if (u === 'pruefen') pruefen();
     else if (u === 'tipp') tipp();
     else if (u === 'weiter') naechste();
-    else if (u === 'pause') beenden(true);
+    else if (u === 'zurueck') beenden(true);
   });
 
   document.addEventListener('keydown', e => {
