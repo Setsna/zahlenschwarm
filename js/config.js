@@ -32,8 +32,10 @@ ZS.config = {
   /* Ab Etappe 2/3 genutzt */
   runde: { aufgaben: 10, neueHoechstens: 3 },
   bedenkzeit: { aktiv: true, sekundenVorPruefen: 1.5 },
-  /* So lange bleibt "Richtig!" stehen, bevor die nächste Aufgabe kommt (Ingo: 1 s ist zu kurz) */
-  pauseNachRichtigSek: 2,
+  /* So lange bleibt "Richtig!" stehen, bevor die nächste Aufgabe kommt (Ingo: 1,5 s) */
+  pauseNachRichtigSek: 1.5,
+  /* Richtig, aber langsam: so lange bleibt "So geht es noch schneller" stehen, dann geht es von selbst weiter */
+  pauseNachLangsamSek: 4,
   eingabeHoechstensZiffern: 3,
   /* "zügig" = Zeit von der Anzeige der Aufgabe bis zur ersten getippten Ziffer, in Sekunden */
   zuegig: { mal: 5, geteilt: 8, plus: 8, minus: 8, mitUebergang: 10 },

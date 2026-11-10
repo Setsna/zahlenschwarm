@@ -152,6 +152,7 @@
       rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p><p class="rueck__weg">So geht es noch schneller: ${mitRechnungen(erkl[0])}</p>${weiterKnopf()}`,
         `Richtig! So geht es noch schneller: ${erkl[0]}`);
       fokusWeiter();
+      z.weiterTimer = setTimeout(naechste, C.pauseNachLangsamSek * 1000);
     } else {
       rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><ul class="rueck__weg">${erkl.map(t => `<li>${mitRechnungen(t)}</li>`).join('')}</ul>${weiterKnopf()}`,
         `Fast! ${auf.text} = ${auf.loesung}. ${erkl.join(' ')}`);
