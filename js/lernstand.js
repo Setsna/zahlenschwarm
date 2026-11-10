@@ -66,12 +66,14 @@
      Reihenfolge: fällige (niedrigste Stufe zuerst) – neue (höchstens 3 in den letzten 10) – Kontrolle (am längsten nicht dran).
      Bremse (Ingo, 10.11.2026): keine der letzten drei Aufgaben, also höchstens jede 4. Aufgabe dieselbe.
      Die gezielte Wiederholung nach einem Fehler macht ueben.js selbst (nach zwei anderen). */
-  function naechste({ kandidaten, kind, verlauf = [], heute = tagNr(), zufall = Math.random }) {
+  function naechste({ kandidaten, kind, verlauf = [], heute = tagNr(), zufall = Math.random, neuInReihenfolge = false }) {
     const zuletzt = new Set(verlauf.slice(-C.leitner.mindestAbstand).map(v => v.id));
     let pool = kandidaten.filter(a => !zuletzt.has(a.id));
     if (!pool.length) pool = kandidaten.slice();
     const mit = pool.map(a => ({ a, e: eintrag(kind, a.id, heute) }));
     const zufaellig = liste => liste[Math.floor(zufall() * liste.length)];
+    /* Plus/Minus: neue Formate der Reihe nach (erst 1, dann 2 …), beim Einmaleins zufällig */
+    const neueWahl = () => neuInReihenfolge ? neue[0] : zufaellig(neue);
 
     const faellige = mit.filter(x => istFaellig(x.e, heute));
     const neue = mit.filter(x => x.e.box === 0);
@@ -83,7 +85,7 @@
       const minBox = Math.min(...faellige.map(x => x.e.box));
       wahl = zufaellig(faellige.filter(x => x.e.box === minBox));
     } else if (neuErlaubt) {
-      wahl = zufaellig(neue);
+      wahl = neueWahl();
     } else if (faellige.length) {
       wahl = zufaellig(faellige);
     } else {
@@ -92,7 +94,7 @@
       /* Randfall in der Anlaufphase: alle geübten Aufgaben sind unter den letzten drei, übrig sind nur neue.
          Die Bremse hat Vorrang, dann kommt ausnahmsweise noch eine neue Aufgabe. (Ein Kind mit vielen
          Fehlern hat genug fällige Aufgaben, bei ihm tritt der Fall nicht auf.) */
-      wahl = alt.length ? alt[0] : (neue.length ? zufaellig(neue) : zufaellig(mit));
+      wahl = alt.length ? alt[0] : (neue.length ? neueWahl() : zufaellig(mit));
     }
     return { aufgabe: wahl.a, neu: wahl.e.box === 0 };
   }

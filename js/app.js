@@ -78,7 +78,7 @@
   const BEREICHE = [
     { id: 'mal', titel: 'Einmaleins', text: 'Reihe für Reihe oder gemischt', bald: false },
     { id: 'geteilt', titel: 'Geteilt', text: 'Die Umkehraufgaben', bald: false },
-    { id: 'plusminus', titel: 'Plus und Minus', text: 'Rechnen im Kopf bis 1000', bald: true }
+    { id: 'plusminus', titel: 'Plus und Minus', text: 'Rechnen im Kopf bis 1000', bald: false }
   ];
   function bereichKarte(b) {
     const inhalt = `<span class="bereich__titel">${esc(b.titel)}</span><span class="bereich__text">${esc(b.text)}</span>${b.bald ? '<span class="bereich__status">Bald</span>' : ''}`;
@@ -97,7 +97,6 @@
       <section class="bereiche-block" aria-labelledby="h-bereiche">
         <h2 id="h-bereiche" class="abschnitt hof">Wohin schwimmst du heute?</h2>
         <ul class="bereiche">${BEREICHE.map(bereichKarte).join('')}</ul>
-        <p class="einleitung hof">Plus und Minus kommt bald.</p>
       </section>
       ${S.istVorschau ? '' : `<p class="knopfreihe">
         ${mehrere ? '<button type="button" class="knopf leise-knopf" data-aktion="wer">Kind wechseln</button>' : ''}
@@ -118,11 +117,11 @@
   /* Begonnene Reihen: mindestens eine Aufgabe schon geübt */
   const begonneneReihen = art => OFFENE_REIHEN.filter(r => reiheVon(r, art).some(a => ZS.lernstand.eintrag(S.aktiv(), a.id).box > 0));
   /* 10 Tupfen je Reihe: gefüllt = sicher, halb = übe ich noch, leer = neu */
-  function reihenTupfen(r, art) {
-    const k = S.aktiv(), aufgaben = reiheVon(r, art);
+  function reihenTupfen(r, art, aufgaben = reiheVon(r, art)) {
+    const k = S.aktiv();
     const st = ZS.lernstand.reiheStand(k, aufgaben);
     const punkte = aufgaben.map(a => `<i class="rt rt--${ZS.lernstand.status(ZS.lernstand.eintrag(k, a.id))}"></i>`).join('');
-    return `<span class="reihen-tupfen" aria-hidden="true">${punkte}</span><span class="nurvorlesen">, ${st.sicher} von ${st.gesamt} sicher</span>`;
+    return `<span class="reihen-tupfen${aufgaben.length === 6 ? ' reihen-tupfen--6' : ''}" aria-hidden="true">${punkte}</span><span class="nurvorlesen">, ${st.sicher} von ${st.gesamt} sicher</span>`;
   }
 
   function ansichtReihen(art = 'mal') {
@@ -145,26 +144,57 @@
       <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, A_.titel);
   }
 
-  /* Endlos üben (Ingo: kein Rundenende), Auswahl nach Lernstand. "Zurück" führt zurück. */
+  /* ---------- Plus und Minus: zwei Kacheln mit je 6 Tupfen (ein Tupfen je Format) ---------- */
+  const PM = {
+    plus: { zeichen: '+', name: 'Plus im Kopf' },
+    minus: { zeichen: ZS.aufgaben.MINUS, name: 'Minus im Kopf' }
+  };
+  const pmBegonnen = () => ['plus', 'minus'].filter(op => ZS.aufgaben.formate(op).some(a => ZS.lernstand.eintrag(S.aktiv(), a.id).box > 0));
+  function ansichtPlusMinus() {
+    const kacheln = ['plus', 'minus'].map(op => `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="pm" data-op="${op}"><span class="reihe__zahl">${PM[op].zeichen}</span><span class="bereich__text">${PM[op].name}</span>${reihenTupfen(null, op, ZS.aufgaben.formate(op))}</button></li>`).join('');
+    const begonnen = pmBegonnen();
+    const gemischt = begonnen.length
+      ? `<button type="button" class="fenster bereich gemischt" data-aktion="pm-gemischt"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Aufgaben aus: ${begonnen.map(op => PM[op].name).join(', ')}</span></button>`
+      : `<div class="fenster bereich gemischt bereich--bald"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Geht los, sobald du Plus oder Minus geübt hast.</span></div>`;
+    zeigen(`
+      ${kopf('Plus und Minus', 'Rechnen im Kopf bis 1000. Was übst du heute?', false)}
+      <section class="bereiche-block" aria-label="Plus und Minus">
+        <ul class="bereiche zwei">${kacheln}</ul>
+        ${gemischt}
+      </section>
+      <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, 'Plus und Minus');
+  }
+
+  /* Endlos üben (Ingo: kein Rundenende), Auswahl nach Lernstand. "Zurück" führt zurück.
+     Bei Plus/Minus sind die Kandidaten Formate; konkret() macht daraus jedes Mal eine neue Aufgabe. */
   function rundeStarten(kandidaten, zurueck) {
+    const neuInReihenfolge = kandidaten.some(a => a.platzhalter);
     ZS.ueben.starte({
-      waehler: verlauf => ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf }).aufgabe,
+      waehler: verlauf => ZS.aufgaben.konkret(ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf, neuInReihenfolge }).aufgabe),
       fertig: () => zurueck()
     });
   }
 
   /* ---------- Heute bereit für dich ---------- */
-  /* Schaut über Einmaleins und Geteilt. Reihenfolge: 2er, durch 2, 5er, durch 5 …
+  /* Schaut über alle Bereiche. Reihenfolge: 2er, durch 2, Plus, 5er, durch 5, Minus, dann die übrigen Reihen.
      So kommt eine Geteilt-Reihe erst dran, wenn die Malreihe dazu fast sicher ist. Keine Zahlen, damit kein Druck entsteht. */
+  function heuteReihen() {
+    const liste = [];
+    OFFENE_REIHEN.forEach((nr, i) => {
+      for (const art of ['mal', 'geteilt']) liste.push({ nr: `${art}:${nr}`, aufgaben: reiheVon(nr, art) });
+      if (i === 0) liste.push({ nr: 'plus:alle', aufgaben: ZS.aufgaben.formate('plus') });
+      if (i === 1) liste.push({ nr: 'minus:alle', aufgaben: ZS.aufgaben.formate('minus') });
+    });
+    return liste;
+  }
   function heuteKarte() {
-    const reihen = OFFENE_REIHEN.flatMap(nr => ['mal', 'geteilt'].map(art => ({ nr: `${art}:${nr}`, aufgaben: reiheVon(nr, art) })));
-    const e = ZS.lernstand.empfehlung(S.aktiv(), reihen);
+    const e = ZS.lernstand.empfehlung(S.aktiv(), heuteReihen());
     if (!e.reihe) return '';
     const [art, nr] = e.reihe.split(':');
-    const name = art === 'geteilt' ? `Geteilt durch ${nr}` : `${nr}er-Reihe`;
+    const name = PM[art] ? PM[art].name : art === 'geteilt' ? `Geteilt durch ${nr}` : `${nr}er-Reihe`;
     const text = {
       faellig: `${name}: Ein paar Aufgaben warten auf dich.`,
-      neu: `Neu für dich: ${art === 'geteilt' ? `Geteilt durch ${nr}` : `die ${nr}er-Reihe`}.`,
+      neu: `Neu für dich: ${art === 'mal' ? `die ${nr}er-Reihe` : name}.`,
       weiter: `${name}: Es gibt noch neue Aufgaben für dich.`,
       fertig: 'Heute ist alles geschafft. Du kannst trotzdem weiterüben.'
     }[e.art];
@@ -235,7 +265,10 @@
     else if (a === 'bereich' && ARTEN[b.dataset.id]) ansichtReihen(b.dataset.id);
     else if (a === 'reihe') { const art = b.dataset.art; rundeStarten(reiheVon(Number(b.dataset.r), art), () => ansichtReihen(art)); }
     else if (a === 'gemischt') { const art = b.dataset.art; rundeStarten(begonneneReihen(art).flatMap(r => reiheVon(r, art)), () => ansichtReihen(art)); }
-    else if (a === 'heute') rundeStarten(reiheVon(Number(b.dataset.r), b.dataset.art), ansichtStart);
+    else if (a === 'heute') rundeStarten(PM[b.dataset.art] ? ZS.aufgaben.formate(b.dataset.art) : reiheVon(Number(b.dataset.r), b.dataset.art), ansichtStart);
+    else if (a === 'bereich' && b.dataset.id === 'plusminus') ansichtPlusMinus();
+    else if (a === 'pm') rundeStarten(ZS.aufgaben.formate(b.dataset.op), ansichtPlusMinus);
+    else if (a === 'pm-gemischt') rundeStarten(pmBegonnen().flatMap(op => ZS.aufgaben.formate(op)), ansichtPlusMinus);
     else if (a === 'start') ansichtStart();
   });
 

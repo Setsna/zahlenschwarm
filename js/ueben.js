@@ -105,7 +105,7 @@
     o.classList.toggle('leer', !z.eingabe);
   }
   function ziffer(t) {
-    if (z.beantwortet || z.eingabe.length >= C.eingabeHoechstensZiffern) return;
+    if (z.beantwortet || z.eingabe.length >= A.ziffern(z.aufgabe)) return;
     if (z.ersteZiffer === null) z.ersteZiffer = performance.now() - z.start;
     z.eingabe = (z.eingabe === '0' ? '' : z.eingabe) + t;
     eingabeZeigen();
@@ -136,7 +136,7 @@
     z.beantwortet = true;
     clearTimeout(z.bedenkTimer);
     const denkSek = (z.ersteZiffer ?? (performance.now() - z.start)) / 1000;
-    const zuegig = richtig && z.tippStufe === 0 && denkSek <= C.zuegig[auf.art];
+    const zuegig = richtig && z.tippStufe === 0 && denkSek <= (auf.uebergang ? C.zuegig.mitUebergang : C.zuegig[auf.art]);
     const eintrag = { id: auf.id, richtig, denkSek: Math.round(denkSek * 10) / 10, tipp: z.tippStufe > 0, zuegig };
     z.ergebnisse.push(eintrag);
     if (!ZS.speicher.antwortMerken(auf.id, eintrag) && !ZS.speicher.istVorschau) {

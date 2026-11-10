@@ -124,6 +124,7 @@ img { display: block; max-width: 100%; height: auto; }
 @media (min-width: 640px) { .bereiche { grid-template-columns: repeat(3, 1fr); } }
 .bereiche.reihen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 640px) { .bereiche.reihen { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.bereiche.zwei { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .reihe { min-height: calc(170 * var(--s)); padding: calc(20 * var(--s)) calc(12 * var(--s)); }
 .reihe__zahl { font-family: var(--ziffern); font-weight: 700; font-size: max(30px, calc(58 * var(--s))); line-height: 1; white-space: nowrap; }
 .reihe--offen { border: 3px solid var(--tupfi); box-shadow: inset 0 2px 0 var(--glas-glanz), 0 0 calc(30 * var(--s)) rgba(245, 200, 66, 0.55), 0 26px 50px -10px var(--glas-schatten); }
@@ -140,6 +141,7 @@ button.bereich:active { transform: scale(0.97); }
 
 /* Tupfen auf den Reihen-Kacheln: gefüllt sicher, halb übt, leer neu */
 .reihen-tupfen { display: grid; grid-template-columns: repeat(5, auto); gap: max(3px, calc(6 * var(--s))); margin-top: .35em; }
+.reihen-tupfen--6 { grid-template-columns: repeat(3, auto); }
 .rt { display: block; width: max(8px, calc(14 * var(--s))); aspect-ratio: 1; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.75); }
 .rt--sicher { background: var(--tupfi); border-color: var(--tupfi); }
 .rt--uebt { background: linear-gradient(90deg, rgba(255, 255, 255, 0.85) 50%, transparent 50%); }

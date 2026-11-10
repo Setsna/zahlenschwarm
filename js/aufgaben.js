@@ -108,6 +108,7 @@
   /* Gibt die Blöcke der Erklärung zurück. Der erste Block ist immer der Leitweg der Reihe. */
   function erklaerung(aufgabe) {
     if (aufgabe.art === 'geteilt') return erklaerungGeteilt(aufgabe);
+    if (aufgabe.art === 'plus' || aufgabe.art === 'minus') return erklaerungPlusMinus(aufgabe);
     const { a, b, loesung: p } = aufgabe;
     const bloecke = [];
     if (a === 1 && b !== 2) {
@@ -226,6 +227,7 @@
 
   function tipps(aufgabe) {
     if (aufgabe.art === 'geteilt') return tippsGeteilt(aufgabe);
+    if (aufgabe.art === 'plus' || aufgabe.art === 'minus') return tippsPlusMinus(aufgabe);
     const { a, b } = aufgabe;
     return [
       { stufe: 1, text: strategie(a, b) },
@@ -234,13 +236,180 @@
     ];
   }
 
+  /* ---------- Plus und Minus im Kopf bis 1000 (Etappe 4c) ---------- */
+  /* Hunderttausende Aufgaben möglich, deshalb Lernstand je Format (Mini-Spec Etappe 4, freigegeben):
+       1 Einer ohne Übergang      345 + 3     348 − 3
+       2 Einer mit Übergang       347 + 5     342 − 5
+       3 reine Zehner             345 + 30    375 − 30   (auch mit Hunderterübergang)
+       4 reine Hunderter          345 + 200   545 − 200
+       5 Zehner und Einer, ohne   345 + 23    368 − 23
+       6 Zehner und Einer, mit    347 + 25    372 − 25
+     Die erste Zahl ist immer dreistellig (100 bis 999), die zweite nie dreistellig außer bei reinen Hundertern.
+     Kein Ergebnis unter 1 oder über 1000. Kein Schritt in einer Erklärung rechnet "+ 0" oder "− 0". */
+  const FORMATE = [1, 2, 3, 4, 5, 6];
+  const FORMAT_NAME = {
+    1: 'Einer, ohne Übergang', 2: 'Einer, mit Übergang', 3: 'reine Zehner',
+    4: 'reine Hunderter', 5: 'Zehner und Einer, ohne Übergang', 6: 'Zehner und Einer, mit Übergang'
+  };
+  const OP = { plus: '+', minus: MINUS };
+  const E = n => n % 10, Z = n => Math.floor(n / 10) % 10, H = n => Math.floor(n / 100);
+  const sind = n => n === 1 ? 'ist' : 'sind';
+  const rechne = (op, x, y) => op === 'plus' ? x + y : x - y;
+  const zahl = (von, bis, zufall) => von + Math.floor(zufall() * (bis - von + 1));
+
+  /* Platzhalter eines Formats: trägt den Lernstand, die echte Aufgabe erzeugt konkret() */
+  function format(op, f) {
+    return { id: `${op}:${f}`, art: op, format: f, reihe: f, platzhalter: true, name: FORMAT_NAME[f] };
+  }
+  const formate = op => FORMATE.map(f => format(op, f));
+
+  /* Passt das Paar x, y zum Format? (Auch der Test nutzt eine eigene, unabhängige Prüfung.) */
+  function passt(op, f, x, y) {
+    const r = rechne(op, x, y);
+    if (x < 100 || x > 999 || r < 1 || r > 1000) return false;
+    const plus = op === 'plus';
+    const zehnerUeber = plus ? E(x) + E(y) >= 10 : E(x) < E(y);
+    const hundertUeber = H(x) !== H(r);
+    switch (f) {
+      case 1: return y >= 1 && y <= 9 && !zehnerUeber;
+      /* echter Übergang mit zwei Schritten: 347 + 5 (nicht 347 + 3), 342 − 5 (nicht 340 − 5) */
+      case 2: return y >= 1 && y <= 9 && (plus ? E(x) + y > 10 : E(x) >= 1 && E(x) < y);
+      case 3: {
+        if (y < 10 || y > 90 || E(y) !== 0) return false;
+        /* Bei glatten Zehnern mit Hunderterübergang zwei echte Schritte: 380 + 30, 310 − 30 */
+        if (hundertUeber && E(x) === 0) return plus ? Z(x) + Z(y) > 10 : Z(x) >= 1 && Z(x) < Z(y);
+        return true;
+      }
+      /* Ergebnis behält mindestens einen Hunderter: 545 − 200, nicht 545 − 500 */
+      case 4: return y >= 100 && y <= 900 && y % 100 === 0 && (plus || H(x) > H(y));
+      case 5: return y >= 11 && y <= 99 && E(y) !== 0 && !zehnerUeber && !hundertUeber;
+      case 6: return y >= 11 && y <= 99 && E(y) !== 0 && (zehnerUeber || hundertUeber);
+    }
+    return false;
+  }
+
+  /* Zufallszahlen je Format; wiederholen, bis das Paar passt (endet sicher, siehe Test) */
+  function ziehe(f, zufall) {
+    switch (f) {
+      case 1: case 2: return zahl(1, 9, zufall);
+      case 3: return zahl(1, 9, zufall) * 10;
+      case 4: return zahl(1, 9, zufall) * 100;
+      default: return zahl(1, 9, zufall) * 10 + zahl(1, 9, zufall);
+    }
+  }
+  function plusMinus(op, f, x, y) {
+    const r = rechne(op, x, y);
+    const uebergang = f === 2 || f === 6 || (f === 3 && H(x) !== H(r));
+    return { id: `${op}:${f}`, art: op, format: f, reihe: f, x, y, uebergang, text: `${x} ${OP[op]} ${y}`, loesung: r };
+  }
+  function erzeuge(op, f, zufall = Math.random) {
+    for (let i = 0; i < 10000; i++) {
+      const x = zahl(100, 999, zufall), y = ziehe(f, zufall);
+      if (!passt(op, f, x, y)) continue;
+      /* Selten nennt ein Tipp zufällig das Ergebnis (187 − 97 = 90: "Zerlege die 97 in 90 und 7"). Solche Aufgaben fallen weg. */
+      const a = plusMinus(op, f, x, y);
+      if (a.loesung !== y && tippsPlusMinus(a).some(t => (t.text.match(/\d+/g) || []).map(Number).includes(a.loesung))) continue;
+      return a;
+    }
+    throw new Error(`Keine Aufgabe für ${op} Format ${f}`);
+  }
+  /* Aus einem Platzhalter eine echte Aufgabe machen; echte Aufgaben bleiben, wie sie sind */
+  const konkret = (a, zufall = Math.random) => a && a.platzhalter ? erzeuge(a.art, a.format, zufall) : a;
+
+  /* Einer-Schritt, bei Übergang in zwei Schritten über den vollen Zehner */
+  function einerSchritte(op, start, e, kopf) {
+    const o = OP[op], ende = rechne(op, start, e);
+    const k = op === 'plus' ? 10 - E(start) : E(start);
+    const zwei = op === 'plus' ? E(start) + e > 10 : E(start) >= 1 && E(start) < e;
+    if (!zwei) return [...(kopf ? [kopf.einfach] : []), `${start} ${o} ${e} = ${ende}`];
+    const voll = rechne(op, start, k);
+    return [...(kopf ? [kopf.zwei] : []), `${start} ${o} ${k} = ${voll}`, ...(kopf ? [] : ['Dann der Rest:']), `${voll} ${o} ${e - k} = ${ende}`];
+  }
+
+  function erklaerungPlusMinus(a) {
+    const { art: op, format: f, x, y, loesung: r } = a;
+    const o = OP[op], plus = op === 'plus', und = plus ? 'und' : 'minus';
+    const also = `Also: ${x} ${o} ${y} = ${r}`;
+    switch (f) {
+      case 1: return [['Nur die Einer ändern sich:', `${E(x)} ${o} ${y} = ${E(r)}`, also]];
+      case 2: return [['Erst bis zum vollen Zehner:', ...einerSchritte(op, x, y)]];
+      case 3: {
+        if (H(x) === H(r)) return [['Nur die Zehner ändern sich:', `${Z(x)} Zehner ${und} ${Z(y)} Zehner ${sind(Z(r))} ${Z(r)} Zehner`, also]];
+        if (E(x) !== 0) {
+          const ohne = x - E(x), zwischen = rechne(op, ohne, y);
+          return [['Lass die Einer erst weg:', `${ohne} ${o} ${y} = ${zwischen}`, 'Dann kommen die Einer dazu:', `${zwischen} + ${E(x)} = ${r}`]];
+        }
+        const k = plus ? 100 - (x % 100) : x % 100, voll = rechne(op, x, k);
+        return [['Erst bis zum vollen Hunderter:', `${x} ${o} ${k} = ${voll}`, 'Dann der Rest:', `${voll} ${o} ${y - k} = ${r}`]];
+      }
+      case 4: return [['Nur die Hunderter ändern sich:', `${H(x)} Hunderter ${und} ${H(y)} Hunderter ${sind(H(r))} ${H(r)} Hunderter`, also]];
+      default: {
+        const zehner = y - E(y), zwischen = rechne(op, x, zehner);
+        return [['Erst die Zehner:', `${x} ${o} ${zehner} = ${zwischen}`,
+          ...einerSchritte(op, zwischen, E(y), { einfach: 'Dann die Einer:', zwei: 'Dann die Einer, über den vollen Zehner:' })]];
+      }
+    }
+  }
+
+  function tippsPlusMinus(a) {
+    const { art: op, format: f, x, y, loesung: r } = a;
+    const o = OP[op], plus = op === 'plus';
+    const dazu = (n, wort) => plus ? `Dazu ${n === 1 ? 'kommt' : 'kommen'} ${n} ${wort}.` : `Davon ${n === 1 ? 'geht' : 'gehen'} ${n} ${wort} weg.`;
+    let t1, t2, t3;
+    switch (f) {
+      case 1:
+        t1 = 'Schau nur auf die Einer.';
+        t2 = `${x} hat ${E(x)} Einer. ${dazu(y, 'Einer')}`;
+        t3 = `${E(x)} ${o} ${y} = ${E(r)}. Die Zehner und Hunderter bleiben gleich.`;
+        break;
+      case 2: {
+        const k = plus ? 10 - E(x) : E(x);
+        t1 = plus ? 'Rechne erst bis zum vollen Zehner.' : 'Rechne erst zurück bis zum vollen Zehner.';
+        t2 = `Zerlege die ${y} in ${k} und ${y - k}.`;
+        t3 = `${x} ${o} ${k} = ${rechne(op, x, k)}. ${plus ? 'Jetzt kommt noch der Rest dazu.' : 'Jetzt geht noch der Rest weg.'}`;
+        break;
+      }
+      case 3:
+        if (H(x) === H(r)) {
+          t1 = 'Schau nur auf die Zehner.';
+          t2 = `${x} hat ${Z(x)} Zehner. ${dazu(Z(y), 'Zehner')}`;
+          t3 = `${Z(x)} Zehner ${plus ? 'und' : 'minus'} ${Z(y)} Zehner ${sind(Z(r))} ${Z(r)} Zehner.`;
+        } else if (E(x) !== 0) {
+          const ohne = x - E(x);
+          t1 = 'Lass die Einer erst weg und rechne mit den Zehnern.';
+          t2 = `Zerlege die ${x} in ${ohne} und ${E(x)}.`;
+          t3 = `${ohne} ${o} ${y} = ${rechne(op, ohne, y)}. Jetzt kommen die Einer wieder dazu.`;
+        } else {
+          const k = plus ? 100 - (x % 100) : x % 100;
+          t1 = plus ? 'Rechne erst bis zum vollen Hunderter.' : 'Rechne erst zurück bis zum vollen Hunderter.';
+          t2 = `Zerlege die ${y}: Erst ${k} bis zum vollen Hunderter, dann der Rest.`;
+          t3 = `${x} ${o} ${k} = ${rechne(op, x, k)}. ${plus ? 'Jetzt kommt noch der Rest dazu.' : 'Jetzt geht noch der Rest weg.'}`;
+        }
+        break;
+      case 4:
+        t1 = 'Schau nur auf die Hunderter.';
+        t2 = `${x} hat ${H(x)} Hunderter. ${dazu(H(y), 'Hunderter')}`;
+        t3 = `${H(x)} Hunderter ${plus ? 'und' : 'minus'} ${H(y)} Hunderter ${sind(H(r))} ${H(r)} Hunderter.`;
+        break;
+      default: {
+        const zehner = y - E(y);
+        t1 = 'Rechne erst die Zehner, dann die Einer.';
+        t2 = `Zerlege die ${y} in ${zehner} und ${E(y)}.`;
+        t3 = `${x} ${o} ${zehner} = ${rechne(op, x, zehner)}. ${plus ? 'Jetzt kommen noch die Einer dazu.' : 'Jetzt gehen noch die Einer weg.'}`;
+      }
+    }
+    return [{ stufe: 1, text: t1 }, { stufe: 2, text: t2 }, { stufe: 3, text: t3 }];
+  }
+
   /* ---------- Antwort prüfen ---------- */
   /* Eingabe ist der Text aus dem Ziffernfeld. Leere Eingabe zählt nicht als Antwort. */
+  /* Höchstens so viele Ziffern, wie die Lösung haben kann: Einmaleins und Geteilt 3, Plus und Minus 4 (bis 1000) */
+  const ziffern = aufgabe => C.eingabeZiffern[aufgabe.art] || 3;
   function pruefen(aufgabe, eingabe) {
     const t = String(eingabe || '').trim();
-    if (!/^\d{1,3}$/.test(t)) return null;
+    if (!new RegExp(`^\\d{1,${ziffern(aufgabe)}}$`).test(t)) return null;
     return Number(t) === aufgabe.loesung;
   }
 
-  ZS.aufgaben = { MAL, GETEILT, mal, geteilt, reihe, ausId, mischen, runde, erklaerung, erklaerungText, tipps, pruefen };
+  ZS.aufgaben = { MAL, GETEILT, MINUS, FORMATE, FORMAT_NAME, format, formate, passt, erzeuge, konkret, ziffern, mal, geteilt, reihe, ausId, mischen, runde, erklaerung, erklaerungText, tipps, pruefen };
 })();

@@ -36,7 +36,7 @@ ZS.config = {
   pauseNachRichtigSek: 1.5,
   /* Richtig, aber langsam: so lange bleibt "So geht es noch schneller" stehen, dann geht es von selbst weiter */
   pauseNachLangsamSek: 4,
-  eingabeHoechstensZiffern: 3,
+  eingabeZiffern: { mal: 3, geteilt: 3, plus: 4, minus: 4 },
   /* "zügig" = Zeit von der Anzeige der Aufgabe bis zur ersten getippten Ziffer, in Sekunden */
   zuegig: { mal: 5, geteilt: 8, plus: 8, minus: 8, mitUebergang: 10 },
   /* Lernstufen: Abstand in Tagen je Stufe 0–4; mindestAbstand: dieselbe Aufgabe höchstens jede 4. Aufgabe;
