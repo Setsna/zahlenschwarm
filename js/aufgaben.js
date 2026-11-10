@@ -15,19 +15,33 @@
     return { id: `mal:${a}:${b}`, art: 'mal', a, b, reihe: b, text: `${a} ${MAL} ${b}`, loesung: a * b };
   }
 
-  /* Alle Aufgaben einer Reihe, z. B. reihe(2) = 1 · 2 bis 10 · 2 */
-  function reihe(b) {
+  /* Geteilt (Etappe 4b): Umkehrung von a · b = c, also c : b = a. Gehört zur Reihe "durch b".
+     Nie ein Rest, nie eine 0, Dividend höchstens 100. */
+  function geteilt(a, b) {
+    const c = a * b;
+    return { id: `geteilt:${c}:${b}`, art: 'geteilt', a, b, c, reihe: b, text: `${c} ${GETEILT} ${b}`, loesung: a };
+  }
+
+  /* Alle Aufgaben einer Reihe, z. B. reihe(2) = 1 · 2 bis 10 · 2, reihe(2, 'geteilt') = 2 : 2 bis 20 : 2 */
+  function reihe(b, art = 'mal') {
     const { min, max } = C.faktoren;
     const liste = [];
-    for (let a = min; a <= max; a++) liste.push(mal(a, b));
+    for (let a = min; a <= max; a++) liste.push(art === 'geteilt' ? geteilt(a, b) : mal(a, b));
     return liste;
   }
 
   function ausId(id) {
-    const m = /^mal:(\d+):(\d+)$/.exec(String(id));
-    if (!m) return null;
-    const a = Number(m[1]), b = Number(m[2]), { min, max } = C.faktoren;
-    return a >= min && a <= max && b >= min && b <= max ? mal(a, b) : null;
+    const { min, max } = C.faktoren;
+    const imBereich = (a, b) => a >= min && a <= max && b >= min && b <= max;
+    let m = /^mal:(\d+):(\d+)$/.exec(String(id));
+    if (m) { const a = Number(m[1]), b = Number(m[2]); return imBereich(a, b) ? mal(a, b) : null; }
+    m = /^geteilt:(\d+):(\d+)$/.exec(String(id));
+    if (m) {
+      const c = Number(m[1]), b = Number(m[2]);
+      if (!b || c % b) return null;
+      return imBereich(c / b, b) ? geteilt(c / b, b) : null;
+    }
+    return null;
   }
 
   /* Zufällige Reihenfolge (Fisher-Yates). zufall ist austauschbar für Tests. */
@@ -93,6 +107,7 @@
 
   /* Gibt die Blöcke der Erklärung zurück. Der erste Block ist immer der Leitweg der Reihe. */
   function erklaerung(aufgabe) {
+    if (aufgabe.art === 'geteilt') return erklaerungGeteilt(aufgabe);
     const { a, b, loesung: p } = aufgabe;
     const bloecke = [];
     if (a === 1 && b !== 2) {
@@ -116,6 +131,17 @@
     }
     if (a !== b) bloecke.push(['Tauschaufgabe:', `${b} ${MAL} ${a} = ${p}`]);
     return bloecke;
+  }
+
+  /* Geteilt, Beispiel 56 : 8 (Mini-Spec Etappe 4, freigegeben):
+       56 : 8 heißt:
+       Wie oft passt die 8 in die 56?
+       Denk an die Malaufgabe:
+       7 · 8 = 56
+       Also: 56 : 8 = 7 */
+  function erklaerungGeteilt({ a, b, c }) {
+    return [[`${c} ${GETEILT} ${b} heißt:`, `Wie oft passt die ${b} in die ${c}?`, 'Denk an die Malaufgabe:',
+      `${a} ${MAL} ${b} = ${c}`, `Also: ${c} ${GETEILT} ${b} = ${a}`]];
   }
 
   /* Eine Erklärung als Fließtext (für Screenreader-Ansage) */
@@ -180,7 +206,26 @@
 
   /* Drei Stufen: 1 Strategie, 2 Bild (Schwärme als Punktefeld), 3 Hilfsaufgabe.
      Bei 2er-Aufgaben ist die Hilfsaufgabe die Kernaufgabe zu a. */
+  /* Geteilt, Tipp 3: eine Kernaufgabe der Reihe in der Nähe (mal 1, 2, 5 oder 10, nie die gesuchte)
+     und wie weit es von dort noch ist. Bei 5 ist 10 · b mit der Hälfte der kürzeste Weg. */
+  function naheKernaufgabe(a, b, c) {
+    if (a === 5) return `10 ${MAL} ${b} = ${10 * b}. ${c} ist die Hälfte davon.`;
+    const k = [1, 2, 5, 10].filter(x => x !== a).sort((x, y) => Math.abs(x - a) - Math.abs(y - a) || x - y)[0];
+    const kb = k * b;
+    return kb < c ? `${k} ${MAL} ${b} = ${kb}. Bis ${c} fehlen noch ${c - kb}.` : `${k} ${MAL} ${b} = ${kb}. Das sind ${kb - c} zu viel.`;
+  }
+
+  function tippsGeteilt({ a, b, c }) {
+    return [
+      { stufe: 1, text: `Welche Malaufgabe mit ${b} ergibt ${c}?` },
+      { stufe: 2, text: `${c} Fische, in Schwärme zu je ${b} sortiert. Wie viele Schwärme sind es?`,
+        bild: { schwaerme: a, je: b, label: `${c} Fische in Schwärmen zu je ${b}` } },
+      { stufe: 3, text: naheKernaufgabe(a, b, c) }
+    ];
+  }
+
   function tipps(aufgabe) {
+    if (aufgabe.art === 'geteilt') return tippsGeteilt(aufgabe);
     const { a, b } = aufgabe;
     return [
       { stufe: 1, text: strategie(a, b) },
@@ -197,5 +242,5 @@
     return Number(t) === aufgabe.loesung;
   }
 
-  ZS.aufgaben = { MAL, mal, reihe, ausId, mischen, runde, erklaerung, erklaerungText, tipps, pruefen };
+  ZS.aufgaben = { MAL, GETEILT, mal, geteilt, reihe, ausId, mischen, runde, erklaerung, erklaerungText, tipps, pruefen };
 })();

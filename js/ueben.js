@@ -29,7 +29,7 @@
   /* ---------- Bild für Tipp 2: a Schwärme mit je b Fischen, als Punktefeld ---------- */
   /* Jede Spalte ist ein Schwarm (so bleibt das Bild flach und das Ziffernfeld sichtbar).
      Nach 5 Schwärmen und nach 5 Fischen eine kleine Lücke (Fünferstruktur). */
-  function schwarmBild(a, b) {
+  function schwarmBild(a, b, label = null) {
     const dx = 30, dy = 15, luecke = 12;
     const x = i => 17 + i * dx + (i >= 5 ? luecke : 0);
     const y = j => 9 + j * dy + (j >= 5 ? luecke : 0);
@@ -40,7 +40,7 @@
         fische += `<g transform="translate(${x(i)} ${y(j)})"><path d="M-9 0 L-15 -5 L-15 5 Z" fill="#e0a92a"/><ellipse rx="9" ry="5.5" fill="#f5c842" stroke="#b9821a" stroke-width="1"/><circle cx="4.5" cy="-1" r="1.3" fill="#0b3155"/></g>`;
       }
     }
-    const beschriftung = `${a} ${a === 1 ? 'Schwarm' : 'Schwärme'} mit je ${b} ${b === 1 ? 'Fisch' : 'Fischen'}`;
+    const beschriftung = label || `${a} ${a === 1 ? 'Schwarm' : 'Schwärme'} mit je ${b} ${b === 1 ? 'Fisch' : 'Fischen'}`;
     return `<svg class="schwarm-bild" viewBox="0 0 ${breite} ${hoehe}" style="width:min(100%, ${Math.round(breite * 1.6)}px)" role="img" aria-label="${beschriftung}">${fische}</svg>`;
   }
 
@@ -180,7 +180,7 @@
     const box = app.querySelector('#tipp');
     box.hidden = false;
     /* Nur der aktuelle Tipp, damit das Ziffernfeld im Bild bleibt */
-    box.innerHTML = `<p class="tipp__kopf">Tupfis Tipp <span class="tipp__nr">${z.tippStufe} von 3</span></p><div class="tipp__stufe"><p>${mitRechnungen(s.text)}</p>${s.bild ? schwarmBild(s.bild.schwaerme, s.bild.je) : ''}</div>`;
+    box.innerHTML = `<p class="tipp__kopf">Tupfis Tipp <span class="tipp__nr">${z.tippStufe} von 3</span></p><div class="tipp__stufe"><p>${mitRechnungen(s.text)}</p>${s.bild ? schwarmBild(s.bild.schwaerme, s.bild.je, s.bild.label) : ''}</div>`;
     const k = app.querySelector('[data-u="tipp"]');
     if (z.tippStufe >= 3) { k.disabled = true; k.lastChild.textContent = 'Keine Tipps mehr'; }
     else k.lastChild.textContent = 'Noch ein Tipp';

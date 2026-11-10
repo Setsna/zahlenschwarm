@@ -77,7 +77,7 @@
   /* Die drei Bereiche. "bald": noch nicht gebaut (Etappe 2 bis 4). */
   const BEREICHE = [
     { id: 'mal', titel: 'Einmaleins', text: 'Reihe für Reihe oder gemischt', bald: false },
-    { id: 'geteilt', titel: 'Geteilt', text: 'Die Umkehraufgaben', bald: true },
+    { id: 'geteilt', titel: 'Geteilt', text: 'Die Umkehraufgaben', bald: false },
     { id: 'plusminus', titel: 'Plus und Minus', text: 'Rechnen im Kopf bis 1000', bald: true }
   ];
   function bereichKarte(b) {
@@ -97,7 +97,7 @@
       <section class="bereiche-block" aria-labelledby="h-bereiche">
         <h2 id="h-bereiche" class="abschnitt hof">Wohin schwimmst du heute?</h2>
         <ul class="bereiche">${BEREICHE.map(bereichKarte).join('')}</ul>
-        <p class="einleitung hof">Geteilt und Plus und Minus kommen bald.</p>
+        <p class="einleitung hof">Plus und Minus kommt bald.</p>
       </section>
       ${S.istVorschau ? '' : `<p class="knopfreihe">
         ${mehrere ? '<button type="button" class="knopf leise-knopf" data-aktion="wer">Kind wechseln</button>' : ''}
@@ -106,39 +106,47 @@
       ${erwachsene()}`, `Hallo, ${k.name}`);
   }
 
-  /* ---------- Einmaleins: Reihen-Auswahl ---------- */
-  /* Etappe 4a: alle Reihen offen, das Kind wählt selbst, "Heute bereit für dich" empfiehlt */
+  /* ---------- Reihen-Auswahl (Einmaleins und Geteilt) ---------- */
+  /* Etappe 4a: alle Reihen offen, das Kind wählt selbst, "Heute bereit für dich" empfiehlt.
+     Etappe 4b: Geteilt hat dieselben Reihen ("durch 2", "durch 5" …) mit eigenem Lernstand. */
   const OFFENE_REIHEN = ZS.config.reihenFolge.slice();
+  const ARTEN = {
+    mal: { titel: 'Einmaleins', frage: 'Welche Reihe übst du heute?', kachel: r => [`${r}er`, 'Reihe'], kurz: r => `${r}er` },
+    geteilt: { titel: 'Geteilt', frage: 'Durch welche Zahl teilst du heute?', kachel: r => [`: ${r}`, `durch ${r}`], kurz: r => `durch ${r}` }
+  };
+  const reiheVon = (r, art) => ZS.aufgaben.reihe(r, art);
   /* Begonnene Reihen: mindestens eine Aufgabe schon geübt */
-  const begonneneReihen = () => OFFENE_REIHEN.filter(r => ZS.aufgaben.reihe(r).some(a => ZS.lernstand.eintrag(S.aktiv(), a.id).box > 0));
+  const begonneneReihen = art => OFFENE_REIHEN.filter(r => reiheVon(r, art).some(a => ZS.lernstand.eintrag(S.aktiv(), a.id).box > 0));
   /* 10 Tupfen je Reihe: gefüllt = sicher, halb = übe ich noch, leer = neu */
-  function reihenTupfen(r) {
-    const k = S.aktiv(), aufgaben = ZS.aufgaben.reihe(r);
+  function reihenTupfen(r, art) {
+    const k = S.aktiv(), aufgaben = reiheVon(r, art);
     const st = ZS.lernstand.reiheStand(k, aufgaben);
     const punkte = aufgaben.map(a => `<i class="rt rt--${ZS.lernstand.status(ZS.lernstand.eintrag(k, a.id))}"></i>`).join('');
     return `<span class="reihen-tupfen" aria-hidden="true">${punkte}</span><span class="nurvorlesen">, ${st.sicher} von ${st.gesamt} sicher</span>`;
   }
 
-  function ansichtReihen() {
-    const kacheln = ZS.config.reihenFolge.map(r => OFFENE_REIHEN.includes(r)
-      ? `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="reihe" data-r="${r}"><span class="reihe__zahl">${r}er</span><span class="bereich__text">Reihe</span>${reihenTupfen(r)}</button></li>`
-      : `<li><div class="fenster bereich reihe bereich--bald"><span class="reihe__zahl">${r}er</span><span class="bereich__text">Reihe</span><span class="bereich__status">Bald</span><span class="nurvorlesen">, kommt bald</span></div></li>`).join('');
+  function ansichtReihen(art = 'mal') {
+    const A_ = ARTEN[art];
+    const kacheln = OFFENE_REIHEN.map(r => {
+      const [gross, klein] = A_.kachel(r);
+      return `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="reihe" data-art="${art}" data-r="${r}"><span class="reihe__zahl">${esc(gross)}</span><span class="bereich__text">${esc(klein)}</span>${reihenTupfen(r, art)}</button></li>`;
+    }).join('');
     /* Gemischt: Aufgaben aus allen begonnenen Reihen */
-    const begonnen = begonneneReihen();
+    const begonnen = begonneneReihen(art);
     const gemischt = begonnen.length
-      ? `<button type="button" class="fenster bereich gemischt" data-aktion="gemischt"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Aufgaben aus deinen Reihen: ${begonnen.map(r => `${r}er`).join(', ')}</span></button>`
+      ? `<button type="button" class="fenster bereich gemischt" data-aktion="gemischt" data-art="${art}"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Aufgaben aus deinen Reihen: ${begonnen.map(A_.kurz).join(', ')}</span></button>`
       : `<div class="fenster bereich gemischt bereich--bald"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Geht los, sobald du eine Reihe geübt hast.</span></div>`;
     zeigen(`
-      ${kopf('Einmaleins', 'Welche Reihe übst du heute?', false)}
+      ${kopf(A_.titel, A_.frage, false)}
       <section class="bereiche-block" aria-label="Reihen">
         <ul class="bereiche reihen">${kacheln}</ul>
         ${gemischt}
       </section>
-      <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, 'Einmaleins');
+      <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>`, A_.titel);
   }
 
   /* Endlos üben (Ingo: kein Rundenende), Auswahl nach Lernstand. "Zurück" führt zurück. */
-  function rundeStarten(r, zurueck = ansichtReihen, kandidaten = ZS.aufgaben.reihe(r)) {
+  function rundeStarten(kandidaten, zurueck) {
     ZS.ueben.starte({
       waehler: verlauf => ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf }).aufgabe,
       fertig: () => zurueck()
@@ -146,15 +154,18 @@
   }
 
   /* ---------- Heute bereit für dich ---------- */
-  /* Keine Zahlen, damit kein Druck entsteht */
+  /* Schaut über Einmaleins und Geteilt. Reihenfolge: 2er, durch 2, 5er, durch 5 …
+     So kommt eine Geteilt-Reihe erst dran, wenn die Malreihe dazu fast sicher ist. Keine Zahlen, damit kein Druck entsteht. */
   function heuteKarte() {
-    const reihen = OFFENE_REIHEN.map(nr => ({ nr, aufgaben: ZS.aufgaben.reihe(nr) }));
+    const reihen = OFFENE_REIHEN.flatMap(nr => ['mal', 'geteilt'].map(art => ({ nr: `${art}:${nr}`, aufgaben: reiheVon(nr, art) })));
     const e = ZS.lernstand.empfehlung(S.aktiv(), reihen);
     if (!e.reihe) return '';
+    const [art, nr] = e.reihe.split(':');
+    const name = art === 'geteilt' ? `Geteilt durch ${nr}` : `${nr}er-Reihe`;
     const text = {
-      faellig: `${e.reihe}er-Reihe: Ein paar Aufgaben warten auf dich.`,
-      neu: `Neu für dich: die ${e.reihe}er-Reihe.`,
-      weiter: `${e.reihe}er-Reihe: Es gibt noch neue Aufgaben für dich.`,
+      faellig: `${name}: Ein paar Aufgaben warten auf dich.`,
+      neu: `Neu für dich: ${art === 'geteilt' ? `Geteilt durch ${nr}` : `die ${nr}er-Reihe`}.`,
+      weiter: `${name}: Es gibt noch neue Aufgaben für dich.`,
       fertig: 'Heute ist alles geschafft. Du kannst trotzdem weiterüben.'
     }[e.art];
     const knopf = e.art === 'fertig' ? 'Weiterüben' : "Los geht's";
@@ -162,7 +173,7 @@
       <section class="fenster heute" aria-labelledby="h-heute">
         <h2 id="h-heute">Heute bereit für dich</h2>
         <p>${esc(text)}</p>
-        <p><button type="button" class="knopf haupt" data-aktion="heute" data-r="${e.reihe}">${knopf}</button></p>
+        <p><button type="button" class="knopf haupt" data-aktion="heute" data-art="${art}" data-r="${nr}">${knopf}</button></p>
       </section>`;
   }
 
@@ -184,7 +195,7 @@
               <tbody>
                 <tr><th scope="row">Üben nach Lernstand</th><td>Jede Aufgabe wandert durch fünf Stufen. Unsichere Aufgaben kommen in derselben Runde und an den nächsten Tagen wieder.</td></tr>
                 <tr><th scope="row">Verstehen vor Auswendiglernen</th><td>Fehler werden mit Kernaufgaben (mal 2, mal 5, mal 10), Tausch- und Umkehraufgaben erklärt.</td></tr>
-                <tr><th scope="row">Kein Zeitdruck</th><td>Keine sichtbare Uhr, kein Countdown. Kurze Runden mit zehn Aufgaben.</td></tr>
+                <tr><th scope="row">Kein Zeitdruck</th><td>Keine sichtbare Uhr, kein Countdown. Das Kind übt, so lange es möchte, und hört über „Zurück“ auf.</td></tr>
                 <tr><th scope="row">Erfolg sichtbar machen</th><td>Der eigene Fischschwarm wächst mit jeder sicheren Aufgabe. Fische gehen nie verloren.</td></tr>
                 <tr><th scope="row">Keine Vergleiche</th><td>Keine Punkte, keine Rangliste, kein Wettbewerb zwischen Kindern.</td></tr>
                 <tr><th scope="row">Lehrplan</th><td>Lehrplan Thüringen Mathematik Grundschule 2026, Leitidee Zahl und Operation: Grundaufgaben aus Kernaufgaben ableiten und gedächtnismäßig wiedergeben.</td></tr>
@@ -221,10 +232,10 @@
     if (a === 'waehlen') { S.waehlen(b.dataset.id); ansichtStart(); }
     else if (a === 'wer') { S.abmelden(); S.kinder().length ? ansichtWer() : ansichtNeu(); }
     else if (a === 'neu') { S.abmelden(); ansichtNeu(); }
-    else if (a === 'bereich' && b.dataset.id === 'mal') ansichtReihen();
-    else if (a === 'reihe') rundeStarten(Number(b.dataset.r));
-    else if (a === 'gemischt') rundeStarten(null, ansichtReihen, begonneneReihen().flatMap(r => ZS.aufgaben.reihe(r)));
-    else if (a === 'heute') rundeStarten(Number(b.dataset.r), ansichtStart);
+    else if (a === 'bereich' && ARTEN[b.dataset.id]) ansichtReihen(b.dataset.id);
+    else if (a === 'reihe') { const art = b.dataset.art; rundeStarten(reiheVon(Number(b.dataset.r), art), () => ansichtReihen(art)); }
+    else if (a === 'gemischt') { const art = b.dataset.art; rundeStarten(begonneneReihen(art).flatMap(r => reiheVon(r, art)), () => ansichtReihen(art)); }
+    else if (a === 'heute') rundeStarten(reiheVon(Number(b.dataset.r), b.dataset.art), ansichtStart);
     else if (a === 'start') ansichtStart();
   });
 
