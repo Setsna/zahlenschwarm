@@ -332,7 +332,7 @@
     const also = `Also: ${x} ${o} ${y} = ${r}`;
     switch (f) {
       case 1: return [['Nur die Einer ändern sich:', `${E(x)} ${o} ${y} = ${E(r)}`, also]];
-      case 2: return [['Erst bis zum vollen Zehner:', ...einerSchritte(op, x, y)]];
+      case 2: return [[plus ? 'Erst bis zum vollen Zehner:' : 'Erst zurück bis zum vollen Zehner:', ...einerSchritte(op, x, y)]];
       case 3: {
         if (H(x) === H(r)) return [['Nur die Zehner ändern sich:', `${Z(x)} Zehner ${und} ${Z(y)} Zehner ${sind(Z(r))} ${Z(r)} Zehner`, also]];
         if (E(x) !== 0) {
@@ -340,7 +340,7 @@
           return [['Lass die Einer erst weg:', `${ohne} ${o} ${y} = ${zwischen}`, 'Dann kommen die Einer dazu:', `${zwischen} + ${E(x)} = ${r}`]];
         }
         const k = plus ? 100 - (x % 100) : x % 100, voll = rechne(op, x, k);
-        return [['Erst bis zum vollen Hunderter:', `${x} ${o} ${k} = ${voll}`, 'Dann der Rest:', `${voll} ${o} ${y - k} = ${r}`]];
+        return [[plus ? 'Erst bis zum vollen Hunderter:' : 'Erst zurück bis zum vollen Hunderter:', `${x} ${o} ${k} = ${voll}`, 'Dann der Rest:', `${voll} ${o} ${y - k} = ${r}`]];
       }
       case 4: return [['Nur die Hunderter ändern sich:', `${H(x)} Hunderter ${und} ${H(y)} Hunderter ${sind(H(r))} ${H(r)} Hunderter`, also]];
       default: {
