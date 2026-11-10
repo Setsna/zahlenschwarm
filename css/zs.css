@@ -306,3 +306,41 @@ dialog .knopfreihe { margin-top: var(--abstand); }
   .taste { transition: none; }
   .taste:active { transform: none; }
 }
+
+/* ---------- Mein Tauchbuch (Etappe 5a) ---------- */
+.tauchbuch { width: var(--fenster-breite); }
+.tauchbuch h3 { font-family: var(--serif); font-weight: 500; font-size: max(19px, calc(32 * var(--s))); margin-top: .3em; }
+.schwarm-gross { width: 100%; height: auto; background: rgba(255, 255, 255, 0.07); border-radius: calc(28 * var(--s)); }
+.schwarm-zahl { font-family: var(--serif); font-size: max(20px, calc(36 * var(--s))); text-align: center; }
+.schwarm-legende { display: flex; flex-wrap: wrap; align-items: center; gap: .3em .8em; }
+.punkt { display: inline-block; width: .8em; aspect-ratio: 1; border-radius: 50%; vertical-align: middle; }
+.punkt--mal { background: #f5c842; }
+.punkt--geteilt { background: #7cc7ee; }
+.punkt--plusminus { background: #ff9e85; }
+.stempelfeld { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(20 * var(--s)); grid-template-columns: repeat(auto-fill, minmax(max(104px, calc(150 * var(--s))), 1fr)); }
+.stempel-platz { display: flex; flex-direction: column; align-items: center; text-align: center; gap: .2em; font-size: var(--klein); }
+.stempel-svg { width: max(64px, calc(104 * var(--s))); height: auto; }
+.stempel-svg text { font-family: var(--ziffern); font-weight: 700; }
+.stempel-platz:not(.ist-gestempelt) .stempel-name { opacity: .7; }
+.stempel-name { font-weight: 700; }
+.stempel-datum, .stempel-gefuehl { opacity: .9; }
+.stempel-gefuehl { background: rgba(255, 255, 255, 0.16); border-radius: 999px; padding: .1em .7em; }
+.gefuehle { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(12 * var(--s)); }
+.gefuehle .knopf[aria-pressed="true"] { background: var(--tupfi); }
+.kann-liste li::marker { color: var(--tupfi); }
+.zeit-liste { margin: 0; display: grid; gap: .3em; }
+.zeit-liste div { display: flex; justify-content: space-between; gap: 1em; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding: .2em 0; }
+.zeit-liste dd { margin: 0; font-weight: 700; }
+.zeit-heute { border-bottom: 0 !important; }
+.rueck__fisch { font-weight: 700; color: var(--tupfi); }
+.rueck__text { display: flex; flex-direction: column; align-items: center; gap: .4em; }
+.stempel-moment { display: flex; flex-direction: column; align-items: center; gap: .4em; background: rgba(255, 255, 255, 0.1); border: 2px solid var(--tupfi); border-radius: calc(36 * var(--s)); padding: .8em 1.2em; }
+.stempel-moment__titel { font-family: var(--serif); font-size: max(22px, calc(40 * var(--s))); color: var(--tupfi); }
+.stempel-moment .stempel-svg { width: max(80px, calc(130 * var(--s))); }
+/* Dialog "Neu anfangen" */
+.dialog { max-width: min(92vw, 34em); border: 2px solid var(--glas-kante); border-radius: calc(36 * var(--s)); padding: 1.2em 1.4em; background: #0e3a5c; color: var(--weiss); }
+.dialog::backdrop { background: rgba(3, 20, 35, 0.6); }
+.dialog h2 { font-family: var(--serif); font-weight: 500; font-size: var(--h2); margin-bottom: .4em; }
+.dialog .knopfreihe { margin-top: 1em; }
+.tupfi-frage { display: flex; flex-direction: column; align-items: center; gap: .5em; text-align: center; background: rgba(255, 255, 255, 0.1); border: 2px solid var(--tupfi); border-radius: calc(36 * var(--s)); padding: .8em 1em; }
+.tupfi-frage p { font-weight: 700; }

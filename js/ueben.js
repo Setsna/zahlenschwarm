@@ -7,6 +7,8 @@
    - Eine falsche Aufgabe kommt nach zwei anderen noch einmal (je Aufgabe einmal).
    - Mit "waehler" kommt endlos die jeweils nächste Aufgabe nach Lernstand (js/lernstand.js).
      Verlassen nur über "Zurück" (Ingo: kein Rundenende).
+   - Lernzeit (Etappe 5a): je Aufgabe die Zeit, solange die Seite sichtbar ist, höchstens 2 Minuten je Aufgabe.
+   - Neuer Fisch: kurzer Satz nach "Richtig!". Neuer Stempel: "Gestempelt!" mit Selbsteinschätzung, kein Weiterlaufen.
    - Ab 3 Fehlern bei einer Aufgabe am selben Tag erscheint Tipp 2 (Schwarm-Bild) von selbst. */
 (() => {
   'use strict';
@@ -61,6 +63,7 @@
   function zeigeAufgabe() {
     const auf = z.liste[z.index];
     Object.assign(z, { aufgabe: auf, eingabe: '', start: performance.now(), ersteZiffer: null, tippStufe: 0, beantwortet: false });
+    uhrStarten();
     const kind = ZS.speicher.aktiv();
     const stand = kind ? ZS.lernstand.eintrag(kind, auf.id) : null;
     z.verlauf.push({ id: auf.id, neu: !stand || stand.box === 0 });
@@ -74,7 +77,7 @@
         <div class="ueben__flaeche">
           <div class="fenster aufgabe-fenster">
             <h1 id="h-aufgabe" class="aufgabe"><span class="aufgabe__text">${esc(auf.text)} =</span> <output id="eingabe" class="eingabe" aria-label="Deine Antwort">?</output></h1>
-            <div id="rueck" class="rueck" aria-hidden="true"></div>
+            <div id="rueck" class="rueck"></div>
             <div id="tipp" class="tipp" hidden></div>
           </div>
           <div class="ziffernfeld" role="group" aria-label="Ziffernfeld">${TASTEN.map(tasteHtml).join('')}</div>
@@ -117,11 +120,56 @@
     eingabeZeigen();
   }
 
+  /* ---------- Lernzeit ---------- */
+  /* Läuft je Aufgabe nur, solange die Seite sichtbar ist. Höchstens 2 Minuten je Aufgabe,
+     damit ein liegen gelassenes iPad nicht stundenlang zählt. */
+  const UHR_HOECHSTENS_SEK = 120;
+  function uhrStarten() { if (z && !document.hidden) z.uhr = { start: performance.now(), sek: 0 }; }
+  function uhrStoppen() {
+    if (!z || !z.uhr || !z.aufgabe) return;
+    if (z.uhr.start !== null) z.uhr.sek += (performance.now() - z.uhr.start) / 1000;
+    z.uhr.start = null;
+  }
+  function uhrBuchen() {
+    if (!z || !z.uhr || !z.aufgabe) return;
+    uhrStoppen();
+    const sek = Math.round(Math.min(UHR_HOECHSTENS_SEK, z.uhr.sek) * 10) / 10;
+    z.uhr = null;
+    ZS.speicher.zeitMerken(ZS.tauchbuch.bereichVon(z.aufgabe.art), sek);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (!z || !z.uhr) return;
+    if (document.hidden) uhrStoppen(); else z.uhr.start = performance.now();
+  });
+  window.addEventListener('pagehide', () => uhrBuchen());
+
   /* ---------- Rückmeldung ---------- */
-  /* Sichtbar im Fenster (aria-hidden) und zusätzlich unsichtbar im aria-live-Bereich. */
-  function rueckmelden(html, sprechText = '') {
-    app.querySelector('#rueck').innerHTML = html;
+  /* Text sichtbar im Fenster (für Screenreader versteckt, er hört die Ansage im aria-live-Bereich).
+     Knöpfe stehen außerhalb des versteckten Teils, damit sie erreichbar bleiben. */
+  function rueckmelden(html, sprechText = '', knoepfe = '') {
+    app.querySelector('#rueck').innerHTML = (html ? `<div class="rueck__text" aria-hidden="true">${html}</div>` : '') + knoepfe;
     if (sprechText) ansagen(sprechText);
+  }
+
+  /* Stempel-Moment mit Selbsteinschätzung (Ingo, 11.11.2026) */
+  const grossAnfang = t => t.charAt(0).toUpperCase() + t.slice(1);
+  function stempelMoment(st) {
+    const knoepfe = ZS.tauchbuch.GEFUEHLE.map(g => `<button type="button" class="knopf leise-knopf knopf--klein" data-u="gefuehl" data-key="${st.key}" data-wert="${g.wert}" aria-pressed="false">${g.text}</button>`).join('');
+    return `<div class="stempel-moment">
+        ${ZS.tauchbuch.stempelSvg(st, true)}
+        <p class="stempel-moment__titel">Gestempelt! ${esc(grossAnfang(st.name))} sitzt.</p>
+        <p id="sm-frage">Wie fühlt sich ${esc(st.name)} an?</p>
+        <div class="gefuehle" role="group" aria-labelledby="sm-frage">${knoepfe}</div>
+        <p class="stempel-moment__danke" hidden>Danke! Das steht jetzt in deinem Tauchbuch.</p>
+      </div>`;
+  }
+  function gefuehlWaehlen(b) {
+    ZS.speicher.gefuehlMerken(b.dataset.key, b.dataset.wert);
+    const gruppe = b.closest('.stempel-moment');
+    gruppe.querySelectorAll('[data-u="gefuehl"]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    gruppe.querySelector('.stempel-moment__danke').hidden = false;
+    ansagen('Danke! Das steht jetzt in deinem Tauchbuch.');
+    fokusWeiter();
   }
   const HAKEN = '<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" focusable="false"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const WELLE = '<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" focusable="false"><path d="M3 13c3-4 6 4 9 0s6 4 9 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
@@ -139,7 +187,8 @@
     const zuegig = richtig && z.tippStufe === 0 && denkSek <= (auf.uebergang ? C.zuegig.mitUebergang : C.zuegig[auf.art]);
     const eintrag = { id: auf.id, richtig, denkSek: Math.round(denkSek * 10) / 10, tipp: z.tippStufe > 0, zuegig };
     z.ergebnisse.push(eintrag);
-    if (!ZS.speicher.antwortMerken(auf.id, eintrag) && !ZS.speicher.istVorschau) {
+    const gemerkt = ZS.speicher.antwortMerken(auf.id, eintrag) || { ok: false, fische: [], stempel: [] };
+    if (!gemerkt.ok && !ZS.speicher.istVorschau) {
       const m = document.getElementById('meldung');
       if (m) m.textContent = 'Dein Stand konnte gerade nicht gespeichert werden. Bitte sag deiner Lehrkraft Bescheid.';
     }
@@ -155,17 +204,25 @@
     const erkl = A.erklaerung(auf);
     /* Jeder Block ein Absatz, jede Zeile für sich (Zeilen mit ":" am Ende sind Überleitungen) */
     const block = zeilen => `<div class="weg-block">${zeilen.map(l => `<p class="${/:$/.test(l) ? 'weg-ueber' : ''}">${mitRechnungen(l)}</p>`).join('')}</div>`;
+    /* Neuer Fisch und neuer Stempel gibt es nur nach einer richtigen Antwort */
+    const fisch = gemerkt.fische.length ? '<p class="rueck__fisch">Ein neuer Fisch für deinen Schwarm!</p>' : '';
+    const fischText = gemerkt.fische.length ? ' Ein neuer Fisch für deinen Schwarm!' : '';
+    const st = gemerkt.stempel.length ? ZS.tauchbuch.stempelListe().find(x => x.key === gemerkt.stempel[0]) : null;
+    const stempelText = st ? ` Gestempelt! ${grossAnfang(st.name)} sitzt. Wie fühlt sich ${st.name} an?` : '';
     if (richtig && zuegig) {
-      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p>`, `Richtig! ${auf.text} = ${auf.loesung}.`);
-      z.weiterTimer = setTimeout(naechste, C.pauseNachRichtigSek * 1000);
+      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p>${fisch}`, `Richtig! ${auf.text} = ${auf.loesung}.${fischText}${stempelText}`,
+        st ? stempelMoment(st) + weiterKnopf() : '');
+      if (st) app.querySelector('[data-u="gefuehl"]').focus();
+      else z.weiterTimer = setTimeout(naechste, C.pauseNachRichtigSek * 1000);
     } else if (richtig) {
-      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p><div class="rueck__weg"><p class="weg-ueber">So geht es noch schneller:</p>${block(erkl[0])}</div>${weiterKnopf()}`,
-        `Richtig! So geht es noch schneller: ${A.erklaerungText([erkl[0]])}`);
-      fokusWeiter();
-      z.weiterTimer = setTimeout(naechste, C.pauseNachLangsamSek * 1000);
+      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p>${fisch}<div class="rueck__weg"><p class="weg-ueber">So geht es noch schneller:</p>${block(erkl[0])}</div>`,
+        `Richtig! So geht es noch schneller: ${A.erklaerungText([erkl[0]])}.${fischText}${stempelText}`,
+        (st ? stempelMoment(st) : '') + weiterKnopf());
+      if (st) app.querySelector('[data-u="gefuehl"]').focus();
+      else { fokusWeiter(); z.weiterTimer = setTimeout(naechste, C.pauseNachLangsamSek * 1000); }
     } else {
-      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><div class="rueck__weg">${erkl.map(block).join('')}</div>${weiterKnopf()}`,
-        `Fast! ${auf.text} = ${auf.loesung}. ${A.erklaerungText(erkl)}`);
+      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><div class="rueck__weg">${erkl.map(block).join('')}</div>`,
+        `Fast! ${auf.text} = ${auf.loesung}. ${A.erklaerungText(erkl)}`, weiterKnopf());
       fokusWeiter();
     }
   }
@@ -190,6 +247,7 @@
   /* ---------- Ablauf ---------- */
   function naechste() {
     clearTimeout(z.weiterTimer);
+    uhrBuchen();
     z.index++;
     if (z.index >= z.liste.length && z.waehler) {
       /* Zuerst eine fällige Wiederholung nach einem Fehler, sonst fragt die Lernlogik */
@@ -209,6 +267,7 @@
   function beenden(abgebrochen = true) {
     if (!z) return;
     clearTimeout(z.weiterTimer); clearTimeout(z.bedenkTimer);
+    uhrBuchen();
     const { fertig, ergebnisse } = z;
     z = null;
     document.body.classList.remove('uebt');
@@ -236,6 +295,7 @@
     else if (u === 'pruefen') pruefen();
     else if (u === 'tipp') tipp();
     else if (u === 'weiter') naechste();
+    else if (u === 'gefuehl') gefuehlWaehlen(b);
     else if (u === 'zurueck') beenden(true);
   });
 

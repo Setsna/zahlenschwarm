@@ -88,6 +88,7 @@
   }
 
   function ansichtStart() {
+    S.nachtragen();
     const k = S.aktiv();
     const mehrere = S.kinder().length > 1;
     zeigen(`
@@ -98,10 +99,11 @@
         <h2 id="h-bereiche" class="abschnitt hof">Wohin schwimmst du heute?</h2>
         <ul class="bereiche">${BEREICHE.map(bereichKarte).join('')}</ul>
       </section>
-      ${S.istVorschau ? '' : `<p class="knopfreihe">
-        ${mehrere ? '<button type="button" class="knopf leise-knopf" data-aktion="wer">Kind wechseln</button>' : ''}
-        <button type="button" class="knopf leise-knopf" data-aktion="neu">Neues Kind anlegen</button>
-      </p>`}
+      <p class="knopfreihe">
+        <button type="button" class="knopf" data-aktion="tauchbuch">Mein Tauchbuch</button>
+        ${S.istVorschau ? '' : `${mehrere ? '<button type="button" class="knopf leise-knopf" data-aktion="wer">Kind wechseln</button>' : ''}
+        <button type="button" class="knopf leise-knopf" data-aktion="neu">Neues Kind anlegen</button>`}
+      </p>
       ${erwachsene()}`, `Hallo, ${k.name}`);
   }
 
@@ -207,6 +209,129 @@
       </section>`;
   }
 
+  /* ---------- Mein Tauchbuch (Etappe 5a) ---------- */
+  /* Schwarm als SVG: Plätze wachsen von der Mitte nach außen (ovaler Schwarm), feste Verschiebung je Platz,
+     damit jedes Kind bei gleicher Fischzahl dasselbe Bild sieht. Farbe = Bereich. */
+  const SCHWARM_PLAETZE = (() => {
+    const plaetze = [];
+    for (let r = 0; r < 12; r++) for (let c = 0; c < 24; c++) {
+      const x = 22 + c * 24 + (r % 2 ? 12 : 0) + Math.sin(r * 7.3 + c * 3.1) * 4;
+      const y = 18 + r * 22 + Math.cos(r * 2.7 + c * 5.9) * 4;
+      plaetze.push({ x, y, d: ((x - 300) / 300) ** 2 + ((y - 140) / 140) ** 2 });
+    }
+    return plaetze.sort((p, q) => p.d - q.d).slice(0, ZS.tauchbuch.HOECHSTENS_FISCHE);
+  })();
+  function schwarmGross(fische) {
+    const F = ZS.tauchbuch.FARBE;
+    const svg = fische.map((f, i) => {
+      const p = SCHWARM_PLAETZE[i], c = F[f.bereich] || F.mal;
+      return `<g transform="translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})"><path d="M-8 0 L-13 -4.5 L-13 4.5 Z" fill="${c.rand}"/><ellipse rx="8" ry="5" fill="${c.voll}" stroke="${c.rand}" stroke-width="1"/><circle cx="4" cy="-1" r="1.2" fill="#0b3155"/></g>`;
+    }).join('');
+    /* Ausschnitt wächst mit: wenige Fische erscheinen größer, ab etwa 200 Fischen ist das ganze Feld voll */
+    const genutzt = SCHWARM_PLAETZE.slice(0, Math.max(fische.length, 24));
+    const xs = genutzt.map(p => p.x), ys = genutzt.map(p => p.y);
+    const mx = (Math.min(...xs) + Math.max(...xs)) / 2, my = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const w = Math.min(600, Math.max(Math.max(...xs) - Math.min(...xs) + 50, (Math.max(...ys) - Math.min(...ys) + 40) * 600 / 280));
+    const h = w * 280 / 600;
+    const box = [mx - w / 2, my - h / 2, w, h].map(n => n.toFixed(1)).join(' ');
+    return `<svg class="schwarm-gross" viewBox="${box}" role="img" aria-label="Dein Schwarm mit ${fische.length} ${fische.length === 1 ? 'Fisch' : 'Fischen'}">${svg}</svg>`;
+  }
+
+  const datum = t => new Date(t).toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric', year: 'numeric' });
+
+  function stempelKarte(st, k) {
+    const T = ZS.tauchbuch, e = k.stempel[st.key];
+    if (!e) return `<li class="stempel-platz">${T.stempelSvg(st, false)}<span class="stempel-name">${esc(st.titel)}</span><span class="nurvorlesen">, noch nicht gestempelt</span></li>`;
+    const gefuehl = T.GEFUEHLE.find(g => g.wert === e.gefuehl);
+    return `<li class="stempel-platz ist-gestempelt">${T.stempelSvg(st, true)}<span class="stempel-name">${esc(st.titel)}</span><span class="stempel-datum">${datum(e.t)}</span>${gefuehl ? `<span class="stempel-gefuehl">${esc(gefuehl.text)}</span>` : ''}</li>`;
+  }
+
+  /* Tupfi fragt immer nur nach einem Stempel ohne Selbsteinschätzung, damit die Ansicht ruhig bleibt */
+  function gefuehlFrage(k) {
+    const T = ZS.tauchbuch, st = T.stempelListe().find(x => k.stempel[x.key] && !k.stempel[x.key].gefuehl);
+    if (!st) return '';
+    return `<div class="tupfi-frage">
+        <p id="tb-frage">Tupfi fragt: Wie fühlt sich ${esc(st.name)} an?</p>
+        <div class="gefuehle" role="group" aria-labelledby="tb-frage">${T.GEFUEHLE.map(g => `<button type="button" class="knopf leise-knopf knopf--klein" data-aktion="gefuehl" data-key="${st.key}" data-wert="${g.wert}">${g.text}</button>`).join('')}</div>
+      </div>`;
+  }
+
+  function ansichtTauchbuch() {
+    S.nachtragen();
+    const k = S.aktiv(), T = ZS.tauchbuch;
+    const fische = T.fische(k);
+    const alle = T.stempelListe();
+    const gruppe = (g, titel) => `<h3>${titel}</h3><ul class="stempelfeld">${alle.filter(st => st.gruppe === g).map(st => stempelKarte(st, k)).join('')}</ul>`;
+    const kann = T.kannListe(k);
+    const zeit = b => Number(k.zeit[b]) || 0;
+    zeigen(`
+      ${kopf('Mein Tauchbuch', `Hier siehst du, was du schon kannst${k.name ? `, ${esc(k.name)}` : ''}. Es gibt keine Punkte und keine Rangliste.`, false)}
+      <section class="fenster tauchbuch" aria-labelledby="h-schwarm">
+        <h2 id="h-schwarm">Mein Schwarm</h2>
+        ${fische.length
+          ? `${schwarmGross(fische)}<p class="schwarm-zahl">Dein Schwarm: ${fische.length} ${fische.length === 1 ? 'Fisch' : 'Fische'}</p>`
+          : '<p>Noch ist dein Schwarm leer. Für jede Aufgabe, die du sicher kannst, kommt ein Fisch dazu.</p>'}
+        <p class="leise schwarm-legende"><span class="punkt punkt--mal"></span> Einmaleins <span class="punkt punkt--geteilt"></span> Geteilt <span class="punkt punkt--plusminus"></span> Plus und Minus</p>
+        <p class="leise">Ein Fisch bleibt in deinem Schwarm, auch wenn du die Aufgabe später noch einmal übst.</p>
+      </section>
+      <section class="fenster tauchbuch" aria-labelledby="h-stempel">
+        <h2 id="h-stempel">Meine Stempel</h2>
+        <p class="leise">Einen Stempel gibt es, wenn eine ganze Reihe sicher sitzt.</p>
+        ${gefuehlFrage(k)}
+        ${gruppe('mal', 'Einmaleins')}
+        ${gruppe('geteilt', 'Geteilt')}
+        ${gruppe('plusminus', 'Plus und Minus')}
+      </section>
+      <section class="fenster tauchbuch" aria-labelledby="h-kann">
+        <h2 id="h-kann">Das kann ich schon</h2>
+        ${kann.length ? `<ul class="liste kann-liste">${kann.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '<p>Hier steht bald, was du sicher kannst.</p>'}
+      </section>
+      <section class="fenster tauchbuch" aria-labelledby="h-zeit">
+        <h2 id="h-zeit">Meine Lernzeit</h2>
+        <dl class="zeit-liste">
+          <div><dt>Einmaleins</dt><dd>${T.zeitText(zeit('mal'))}</dd></div>
+          <div><dt>Geteilt</dt><dd>${T.zeitText(zeit('geteilt'))}</dd></div>
+          <div><dt>Plus und Minus</dt><dd>${T.zeitText(zeit('plusminus'))}</dd></div>
+          <div class="zeit-heute"><dt>Heute zusammen</dt><dd>${T.zeitText(S.heuteSek(k))}</dd></div>
+        </dl>
+      </section>
+      <section class="fenster tauchbuch" aria-labelledby="h-neu-anfangen">
+        <h2 id="h-neu-anfangen">Neu anfangen</h2>
+        <p class="leise">Löscht deinen Schwarm, deine Stempel, deine Lernzeit und deinen Lernstand auf diesem Gerät. Die anderen Kinder bleiben.</p>
+        <p><button type="button" class="knopf leise-knopf" data-aktion="loeschen-frage"${S.istVorschau ? ' disabled' : ''}>Alles löschen / Neu anfangen</button></p>
+        ${S.istVorschau ? '<p class="leise">In der Vorschau wird nichts gelöscht.</p>' : ''}
+      </section>
+      <p class="knopfreihe"><button type="button" class="knopf leise-knopf" data-aktion="start">Zurück</button></p>
+      <dialog class="dialog" id="loeschen-dialog" aria-labelledby="ld-titel" aria-describedby="ld-text">
+        <h2 id="ld-titel">Wirklich alles löschen?</h2>
+        <p id="ld-text">Alles von ${esc(k.name)} wird gelöscht: Schwarm, Stempel, Lernzeit und Lernstand. Das geht nicht rückgängig. Die anderen Kinder auf diesem Gerät bleiben.</p>
+        <p class="knopfreihe"><button type="button" class="knopf haupt" data-aktion="loeschen-nein" autofocus>Nein, behalten</button><button type="button" class="knopf leise-knopf" data-aktion="loeschen-ja">Ja, alles löschen</button></p>
+      </dialog>`, 'Mein Tauchbuch');
+    /* Escape schließt wie "Nein, behalten" (mit Fokus zurück) */
+    app.querySelector('#loeschen-dialog').addEventListener('cancel', e => { e.preventDefault(); loeschenNein(); });
+  }
+
+  /* Dialog zu, Fokus zurück auf den Knopf, der ihn geöffnet hat */
+  function loeschenNein() {
+    const d = app.querySelector('#loeschen-dialog');
+    if (d && d.open) d.close();
+    const b = app.querySelector('[data-aktion="loeschen-frage"]');
+    if (b) b.focus();
+  }
+
+  function loeschenFragen() {
+    const d = app.querySelector('#loeschen-dialog');
+    if (d && typeof d.showModal === 'function') d.showModal();
+  }
+  function loeschenJa() {
+    const name = S.aktiv() ? S.aktiv().name : '';
+    const d = app.querySelector('#loeschen-dialog');
+    if (d && d.open) d.close();
+    const ok = S.aktivLoeschen();
+    S.kinder().length ? ansichtWer() : ansichtNeu();
+    melden(ok ? `Alles von ${name} ist gelöscht.` : SPEICHER_FEHLT);
+  }
+
   /* ---------- Für Lehrkräfte und Eltern (aufklappbar, am Ende jeder Startansicht) ---------- */
   function erwachsene() {
     return `
@@ -270,6 +395,11 @@
     else if (a === 'pm') rundeStarten(ZS.aufgaben.formate(b.dataset.op), ansichtPlusMinus);
     else if (a === 'pm-gemischt') rundeStarten(pmBegonnen().flatMap(op => ZS.aufgaben.formate(op)), ansichtPlusMinus);
     else if (a === 'start') ansichtStart();
+    else if (a === 'tauchbuch') ansichtTauchbuch();
+    else if (a === 'gefuehl') { S.gefuehlMerken(b.dataset.key, b.dataset.wert); ansichtTauchbuch(); melden('Danke! Das steht jetzt in deinem Tauchbuch.'); }
+    else if (a === 'loeschen-frage') loeschenFragen();
+    else if (a === 'loeschen-nein') loeschenNein();
+    else if (a === 'loeschen-ja') loeschenJa();
   });
 
   if (S.istVorschau) {

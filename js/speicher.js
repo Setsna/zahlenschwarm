@@ -146,6 +146,45 @@
     n.denkSek = denkSek;
     n.tipp = !!tipp;
     k.aufgaben[id] = n;
+    /* Neue Fische und Stempel (js/tauchbuch.js). Die Üben-Ansicht zeigt sie nach der Antwort. */
+    const neu = ZS.tauchbuch ? ZS.tauchbuch.nachtragen(k) : { fische: [], stempel: [] };
+    return { ok: speichern(), ...neu };
+  }
+
+  /* Fische und Stempel für Stände von vor Etappe 5 (und für die Vorschau) nachtragen */
+  function nachtragen() {
+    const k = aktiv();
+    if (!k || !ZS.tauchbuch) return;
+    const neu = ZS.tauchbuch.nachtragen(k);
+    if (neu.fische.length || neu.stempel.length) speichern();
+  }
+
+  /* Lernzeit je Bereich (mal, geteilt, plusminus) und für heute. Sekunden. */
+  function zeitMerken(bereich, sek) {
+    const k = aktiv();
+    if (!k || !(sek > 0)) return false;
+    const heute = ZS.lernstand.tagNr();
+    k.zeit[bereich] = (Number(k.zeit[bereich]) || 0) + sek;
+    if (k.zeit.tag !== heute) { k.zeit.tag = heute; k.zeit.heute = 0; }
+    k.zeit.heute = (Number(k.zeit.heute) || 0) + sek;
+    return speichern();
+  }
+  const heuteSek = k => k.zeit.tag === ZS.lernstand.tagNr() ? Number(k.zeit.heute) || 0 : 0;
+
+  /* Selbsteinschätzung zu einem Stempel: leicht, gut oder wackelig */
+  function gefuehlMerken(key, wert) {
+    const k = aktiv();
+    if (!k || !k.stempel[key] || !['leicht', 'gut', 'wackelig'].includes(wert)) return false;
+    k.stempel[key] = { ...k.stempel[key], gefuehl: wert };
+    return speichern();
+  }
+
+  /* Löscht nur das aktive Kind. In der Vorschau wird nichts gelöscht. */
+  function aktivLoeschen() {
+    const k = aktiv();
+    if (!k || istVorschau) return false;
+    kinder = kinder.filter(x => x.id !== k.id);
+    abmelden();
     return speichern();
   }
 
@@ -165,6 +204,11 @@
     waehlen,
     abmelden,
     speichern,
-    antwortMerken
+    antwortMerken,
+    nachtragen,
+    zeitMerken,
+    heuteSek,
+    gefuehlMerken,
+    aktivLoeschen
   };
 })();
