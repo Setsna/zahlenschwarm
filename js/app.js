@@ -76,7 +76,7 @@
 
   /* Die drei Bereiche. "bald": noch nicht gebaut (Etappe 2 bis 4). */
   const BEREICHE = [
-    { id: 'mal', titel: 'Einmaleins', text: 'Reihe für Reihe oder gemischt', bald: true },
+    { id: 'mal', titel: 'Einmaleins', text: 'Reihe für Reihe oder gemischt', bald: false },
     { id: 'geteilt', titel: 'Geteilt', text: 'Die Umkehraufgaben', bald: true },
     { id: 'plusminus', titel: 'Plus und Minus', text: 'Rechnen im Kopf bis 1000', bald: true }
   ];
@@ -160,6 +160,11 @@
     if (a === 'waehlen') { S.waehlen(b.dataset.id); ansichtStart(); }
     else if (a === 'wer') { S.abmelden(); S.kinder().length ? ansichtWer() : ansichtNeu(); }
     else if (a === 'neu') { S.abmelden(); ansichtNeu(); }
+    /* Etappe 2, Schritt 2: Einmaleins öffnet zum Ausprobieren eine einzelne Aufgabe der 2er-Reihe.
+       Reihen-Auswahl und ganze Runde kommen in Schritt 3. */
+    else if (a === 'bereich' && b.dataset.id === 'mal') {
+      ZS.ueben.starte({ aufgaben: ZS.aufgaben.runde(2).slice(0, 1), fertig: () => ansichtStart() });
+    }
   });
 
   if (S.istVorschau) {

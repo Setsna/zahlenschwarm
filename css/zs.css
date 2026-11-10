@@ -160,6 +160,64 @@ tbody th { font-weight: 700; width: 34%; }
 .kurz-kinder h2 { margin-top: 0; }
 .kurz-kinder a { color: var(--navy); }
 
+/* ---------- Üben-Ansicht ---------- */
+/* Beim Üben wird der Grund ruhiger: abgedunkelt, keine Blasen, kein atmendes Licht */
+body.uebt .grund::after { content: ""; position: absolute; inset: 0; background: rgba(8, 38, 62, 0.45); }
+body.uebt .blasen { display: none; }
+body.uebt .licht { animation: none; opacity: .5; }
+body.uebt .fuss { display: none; }
+.ueben { width: min(100%, calc(1180 * var(--s))); display: flex; flex-direction: column; gap: var(--abstand); }
+.ueben__leiste { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.knopf--klein { min-height: var(--ziel); font-size: max(16px, calc(24 * var(--s))); padding: 0 1em; }
+.tipp-knopf img { width: max(32px, calc(48 * var(--s))); height: auto; margin: -6px 0 -6px -6px; }
+.tupfen { list-style: none; margin: 0; padding: 0; display: flex; gap: max(6px, calc(10 * var(--s))); }
+.tupfen li { width: max(12px, calc(18 * var(--s))); aspect-ratio: 1; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8); }
+.tupfen li.voll { background: var(--tupfi); border-color: var(--tupfi); }
+.tupfen li.jetzt { background: rgba(255, 255, 255, 0.85); }
+
+.ueben__flaeche { display: grid; gap: var(--abstand); justify-items: center; }
+@media (orientation: landscape) and (min-width: 820px) {
+  .ueben__flaeche { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+}
+.aufgabe-fenster { width: 100%; align-items: center; text-align: center; min-height: calc(300 * var(--s)); justify-content: center; }
+.aufgabe { font-family: var(--ziffern); font-weight: 700; font-size: max(44px, calc(120 * var(--s))); line-height: 1.1; display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: .3em; font-variant-numeric: lining-nums tabular-nums; }
+.eingabe { min-width: 2.2ch; padding: 0 .2em; border-bottom: 4px solid var(--tupfi); color: var(--weiss); }
+.eingabe.leer { color: rgba(255, 255, 255, 0.55); }
+.ist-richtig .eingabe { border-color: #7fe3b8; }
+.ist-fast .eingabe { border-color: #ffd28a; }
+
+.rueck { display: flex; flex-direction: column; align-items: center; gap: .4em; }
+.rueck:empty { display: none; }
+.rueck__titel { font-family: var(--serif); font-weight: 500; font-size: max(26px, calc(52 * var(--s))); display: inline-flex; align-items: center; gap: .3em; }
+.rueck--gut { color: #9ff0cc; }
+.rueck--fast { color: #ffd28a; }
+.rueck__loesung { font-family: var(--ziffern); font-weight: 700; font-size: max(24px, calc(48 * var(--s))); }
+.rueck__weg { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .3em; max-width: 30em; font-size: max(18px, calc(32 * var(--s))); }
+.rueck__hinweis { font-weight: 700; color: var(--tupfi); }
+
+.tipp { width: 100%; background: var(--tupfi-hell); color: var(--navy); border-radius: calc(36 * var(--s)); padding: .8em 1.1em; display: flex; flex-direction: column; gap: .6em; text-align: left; }
+.tipp__kopf { font-family: var(--serif); font-weight: 500; font-size: max(19px, calc(30 * var(--s))); display: flex; justify-content: space-between; gap: 1em; }
+.tipp__nr { font-family: var(--sans); font-size: var(--klein); opacity: .75; }
+.tipp__stufe p { font-size: max(18px, calc(32 * var(--s))); }
+.tipp__stufe { display: flex; flex-direction: column; gap: .4em; }
+.tipp__stufe + .tipp__stufe { border-top: 1px solid rgba(11, 49, 85, 0.2); padding-top: .6em; }
+.schwarm-bild { max-width: 100%; height: auto; align-self: center; }
+
+/* Ziffernfeld: Telefon-Anordnung, große Tasten mit Abstand */
+.ziffernfeld { display: grid; grid-template-columns: repeat(3, var(--taste)); gap: var(--taste-abstand); --taste: max(72px, calc(128 * var(--s))); --taste-abstand: max(12px, calc(20 * var(--s))); }
+.taste {
+  width: var(--taste); height: var(--taste); border-radius: calc(36 * var(--s)); border: 0;
+  background: var(--weiss); color: var(--navy);
+  font-family: var(--ziffern); font-weight: 700; font-size: max(30px, calc(56 * var(--s)));
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  box-shadow: 0 0 calc(18 * var(--s)) rgba(255, 255, 255, 0.4), 0 8px 18px -6px rgba(3, 20, 35, 0.5);
+  touch-action: manipulation; transition: transform 160ms var(--ease);
+}
+.taste:active { transform: scale(0.94); }
+.taste--leise { background: rgba(255, 255, 255, 0.78); }
+.taste--pruefen { background: var(--tupfi); font-family: var(--sans); font-size: max(17px, calc(28 * var(--s))); }
+.taste:disabled { opacity: .5; cursor: default; transform: none; }
+
 /* ---------- Knöpfe ---------- */
 .knopf {
   display: inline-flex; align-items: center; justify-content: center; gap: .5em;
@@ -224,4 +282,6 @@ dialog .knopfreihe { margin-top: var(--abstand); }
   .blasen { display: none; }
   .knopf { transition: none; }
   .knopf:active { transform: none; }
+  .taste { transition: none; }
+  .taste:active { transform: none; }
 }

@@ -1,0 +1,214 @@
+/* Zahlenschwarm: Üben-Ansicht mit eigenem Ziffernfeld.
+   - Ruhige Ansicht: Aufgabe, Eingabe, Ziffernfeld, Rückmeldung. Tupfi und Fortschritt am Rand.
+   - Denkzeit = Zeit von der Anzeige bis zur ersten getippten Ziffer (nicht sichtbar).
+   - "Prüfen" ist kurz gesperrt (Bedenkzeit, config.js).
+   - Bedienbar mit Finger und Tastatur (Ziffern, Rücktaste, Enter).
+   Stand Etappe 2, Schritt 2: eine Liste von Aufgaben nacheinander. Wiederholen und Rundenende kommen in Schritt 3. */
+(() => {
+  'use strict';
+  const C = ZS.config, A = ZS.aufgaben;
+  const app = document.getElementById('app');
+  const live = document.getElementById('live');
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  let z = null; /* Zustand der laufenden Übung */
+
+  function ansagen(text) {
+    live.textContent = '';
+    setTimeout(() => { live.textContent = text; }, 30);
+  }
+
+  /* ---------- Bild für Tipp 2: a Schwärme mit je b Fischen, als Punktefeld ---------- */
+  /* Jede Spalte ist ein Schwarm (so bleibt das Bild flach und das Ziffernfeld sichtbar).
+     Nach 5 Schwärmen und nach 5 Fischen eine kleine Lücke (Fünferstruktur). */
+  function schwarmBild(a, b) {
+    const dx = 30, dy = 15, luecke = 12;
+    const x = i => 17 + i * dx + (i >= 5 ? luecke : 0);
+    const y = j => 9 + j * dy + (j >= 5 ? luecke : 0);
+    const breite = x(a - 1) + 14, hoehe = y(b - 1) + 9;
+    let fische = '';
+    for (let i = 0; i < a; i++) {
+      for (let j = 0; j < b; j++) {
+        fische += `<g transform="translate(${x(i)} ${y(j)})"><path d="M-9 0 L-15 -5 L-15 5 Z" fill="#e0a92a"/><ellipse rx="9" ry="5.5" fill="#f5c842" stroke="#b9821a" stroke-width="1"/><circle cx="4.5" cy="-1" r="1.3" fill="#0b3155"/></g>`;
+      }
+    }
+    const beschriftung = `${a} ${a === 1 ? 'Schwarm' : 'Schwärme'} mit je ${b} ${b === 1 ? 'Fisch' : 'Fischen'}`;
+    return `<svg class="schwarm-bild" viewBox="0 0 ${breite} ${hoehe}" style="width:min(100%, ${Math.round(breite * 1.6)}px)" role="img" aria-label="${beschriftung}">${fische}</svg>`;
+  }
+
+  /* ---------- Aufbau der Ansicht ---------- */
+  const TASTEN = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'loeschen', '0', 'pruefen'];
+  function tasteHtml(t) {
+    if (t === 'loeschen') return `<button type="button" class="taste taste--leise" data-u="loeschen" aria-label="Löschen"><svg viewBox="0 0 24 24" width="1.1em" height="1.1em" aria-hidden="true" focusable="false"><path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9l6 6M18 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>`;
+    if (t === 'pruefen') return `<button type="button" class="taste taste--pruefen" data-u="pruefen">Prüfen</button>`;
+    return `<button type="button" class="taste" data-u="ziffer" data-z="${t}">${t}</button>`;
+  }
+
+  function tupfenHtml() {
+    const n = z.liste.length;
+    return `<ol class="tupfen" aria-label="Aufgabe ${z.index + 1} von ${n}">${z.liste.map((_, i) =>
+      `<li class="${i < z.index ? 'voll' : i === z.index ? 'jetzt' : ''}"></li>`).join('')}</ol>`;
+  }
+
+  function zeigeAufgabe() {
+    const auf = z.liste[z.index];
+    Object.assign(z, { aufgabe: auf, eingabe: '', start: performance.now(), ersteZiffer: null, tippStufe: 0, beantwortet: false });
+    app.innerHTML = `
+      <section class="ueben" aria-labelledby="h-aufgabe">
+        <div class="ueben__leiste">
+          <button type="button" class="knopf leise-knopf knopf--klein" data-u="pause">Pause</button>
+          ${tupfenHtml()}
+          <button type="button" class="knopf leise-knopf knopf--klein tipp-knopf" data-u="tipp"><img src="bilder/tupfi.png?b=${C.bildStand}" alt="" width="40" height="40">Tipp</button>
+        </div>
+        <div class="ueben__flaeche">
+          <div class="fenster aufgabe-fenster">
+            <h1 id="h-aufgabe" class="aufgabe"><span class="aufgabe__text">${esc(auf.text)} =</span> <output id="eingabe" class="eingabe" aria-label="Deine Antwort">?</output></h1>
+            <div id="rueck" class="rueck" aria-hidden="true"></div>
+            <div id="tipp" class="tipp" hidden></div>
+          </div>
+          <div class="ziffernfeld" role="group" aria-label="Ziffernfeld">${TASTEN.map(tasteHtml).join('')}</div>
+        </div>
+      </section>`;
+    document.title = `${auf.text} – Zahlenschwarm`;
+    const h1 = app.querySelector('h1');
+    h1.tabIndex = -1; h1.focus({ preventScroll: true });
+    bedenkzeitStarten();
+  }
+
+  /* ---------- Bedenkzeit ---------- */
+  function bedenkzeitStarten() {
+    const knopf = app.querySelector('[data-u="pruefen"]');
+    if (!C.bedenkzeit.aktiv) return;
+    knopf.disabled = true;
+    clearTimeout(z.bedenkTimer);
+    z.bedenkTimer = setTimeout(() => { if (!z.beantwortet) knopf.disabled = false; }, C.bedenkzeit.sekundenVorPruefen * 1000);
+  }
+  const gesperrt = () => C.bedenkzeit.aktiv && performance.now() - z.start < C.bedenkzeit.sekundenVorPruefen * 1000;
+
+  /* ---------- Eingabe ---------- */
+  function eingabeZeigen() {
+    const o = app.querySelector('#eingabe');
+    o.textContent = z.eingabe || '?';
+    o.classList.toggle('leer', !z.eingabe);
+  }
+  function ziffer(t) {
+    if (z.beantwortet || z.eingabe.length >= C.eingabeHoechstensZiffern) return;
+    if (z.ersteZiffer === null) z.ersteZiffer = performance.now() - z.start;
+    z.eingabe = (z.eingabe === '0' ? '' : z.eingabe) + t;
+    eingabeZeigen();
+    rueckmelden('');
+  }
+  function loeschen() {
+    if (z.beantwortet) return;
+    z.eingabe = z.eingabe.slice(0, -1);
+    eingabeZeigen();
+  }
+
+  /* ---------- Rückmeldung ---------- */
+  /* Sichtbar im Fenster (aria-hidden) und zusätzlich unsichtbar im aria-live-Bereich. */
+  function rueckmelden(html, sprechText = '') {
+    app.querySelector('#rueck').innerHTML = html;
+    if (sprechText) ansagen(sprechText);
+  }
+  const HAKEN = '<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" focusable="false"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const WELLE = '<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true" focusable="false"><path d="M3 13c3-4 6 4 9 0s6 4 9 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+
+  function pruefen() {
+    if (z.beantwortet) return;
+    if (!z.eingabe) { rueckmelden('<p class="rueck__hinweis">Tippe zuerst deine Zahl.</p>', 'Tippe zuerst deine Zahl.'); return; }
+    if (gesperrt()) return;
+    const auf = z.aufgabe;
+    const richtig = A.pruefen(auf, z.eingabe);
+    if (richtig === null) return;
+    z.beantwortet = true;
+    clearTimeout(z.bedenkTimer);
+    const denkSek = (z.ersteZiffer ?? (performance.now() - z.start)) / 1000;
+    const zuegig = richtig && z.tippStufe === 0 && denkSek <= C.zuegig[auf.art];
+    z.ergebnisse.push({ id: auf.id, richtig, denkSek: Math.round(denkSek * 10) / 10, tipp: z.tippStufe > 0, zuegig });
+    app.querySelectorAll('.ziffernfeld button, [data-u="tipp"]').forEach(b => { b.disabled = true; });
+    app.querySelector('.aufgabe-fenster').classList.add(richtig ? 'ist-richtig' : 'ist-fast');
+
+    const erkl = A.erklaerung(auf);
+    if (richtig && zuegig) {
+      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p>`, `Richtig! ${auf.text} = ${auf.loesung}.`);
+      z.weiterTimer = setTimeout(naechste, C.pauseNachRichtigSek * 1000);
+    } else if (richtig) {
+      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p><p class="rueck__weg">So geht es noch schneller: ${esc(erkl[0])}</p>${weiterKnopf()}`,
+        `Richtig! So geht es noch schneller: ${erkl[0]}`);
+      fokusWeiter();
+    } else {
+      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__loesung">${esc(auf.text)} = ${auf.loesung}</p><ul class="rueck__weg">${erkl.map(t => `<li>${esc(t)}</li>`).join('')}</ul>${weiterKnopf()}`,
+        `Fast! ${auf.text} = ${auf.loesung}. ${erkl.join(' ')}`);
+      fokusWeiter();
+    }
+  }
+  const weiterKnopf = () => '<p><button type="button" class="knopf haupt" data-u="weiter">Weiter</button></p>';
+  function fokusWeiter() { const w = app.querySelector('[data-u="weiter"]'); if (w) w.focus(); }
+
+  /* ---------- Tipps ---------- */
+  function tipp() {
+    if (z.beantwortet || z.tippStufe >= 3) return;
+    z.tippStufe++;
+    const s = A.tipps(z.aufgabe)[z.tippStufe - 1];
+    const box = app.querySelector('#tipp');
+    box.hidden = false;
+    /* Nur der aktuelle Tipp, damit das Ziffernfeld im Bild bleibt */
+    box.innerHTML = `<p class="tipp__kopf">Tupfis Tipp <span class="tipp__nr">${z.tippStufe} von 3</span></p><div class="tipp__stufe"><p>${esc(s.text)}</p>${s.bild ? schwarmBild(s.bild.schwaerme, s.bild.je) : ''}</div>`;
+    const k = app.querySelector('[data-u="tipp"]');
+    if (z.tippStufe >= 3) { k.disabled = true; k.lastChild.textContent = 'Keine Tipps mehr'; }
+    else k.lastChild.textContent = 'Noch ein Tipp';
+    ansagen(s.text);
+  }
+
+  /* ---------- Ablauf ---------- */
+  function naechste() {
+    clearTimeout(z.weiterTimer);
+    z.index++;
+    if (z.index >= z.liste.length) beenden();
+    else zeigeAufgabe();
+  }
+  function beenden() {
+    if (!z) return;
+    clearTimeout(z.weiterTimer); clearTimeout(z.bedenkTimer);
+    const { fertig, ergebnisse } = z;
+    z = null;
+    document.body.classList.remove('uebt');
+    if (fertig) fertig(ergebnisse);
+  }
+
+  /* Startet eine Übung. aufgaben: Liste aus ZS.aufgaben. fertig(ergebnisse) wird am Ende oder bei Pause gerufen. */
+  function starte({ aufgaben, fertig }) {
+    z = { liste: aufgaben.slice(), index: 0, fertig, ergebnisse: [] };
+    document.body.classList.add('uebt');
+    zeigeAufgabe();
+  }
+
+  /* ---------- Bedienung ---------- */
+  app.addEventListener('click', e => {
+    if (!z) return;
+    const b = e.target.closest('[data-u]');
+    if (!b || b.disabled) return;
+    const u = b.dataset.u;
+    if (u === 'ziffer') ziffer(b.dataset.z);
+    else if (u === 'loeschen') loeschen();
+    else if (u === 'pruefen') pruefen();
+    else if (u === 'tipp') tipp();
+    else if (u === 'weiter') naechste();
+    else if (u === 'pause') beenden();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (!z || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); ziffer(e.key); }
+    else if (e.key === 'Backspace') { e.preventDefault(); loeschen(); }
+    else if (e.key === 'Enter') {
+      /* Enter auf einem Knopf löst ihn selbst aus; sonst Prüfen bzw. Weiter */
+      if (e.target.closest && e.target.closest('button')) return;
+      e.preventDefault();
+      if (z.beantwortet) { if (app.querySelector('[data-u="weiter"]')) naechste(); }
+      else pruefen();
+    }
+  });
+
+  ZS.ueben = { starte, beenden, schwarmBild, get laeuft() { return !!z; } };
+})();
