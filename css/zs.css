@@ -210,7 +210,7 @@ body.uebt .fuss { display: none; }
 }
 .aufgabe-fenster { width: 100%; align-items: center; text-align: center; min-height: calc(300 * var(--s)); justify-content: center; container-type: inline-size; }
 /* Aufgabe immer in einer Zeile: Schrift höchstens 120 Entwurfspixel, sonst so groß, dass "10 · 10 = 100" ins Fenster passt */
-.aufgabe { font-family: var(--ziffern); font-weight: 700; font-size: max(32px, min(calc(120 * var(--s)), 12cqi)); line-height: 1.1; display: flex; align-items: baseline; justify-content: center; flex-wrap: nowrap; white-space: nowrap; gap: .3em; font-variant-numeric: lining-nums tabular-nums; }
+.aufgabe { font-family: var(--ziffern); font-weight: 700; font-size: max(24px, min(calc(120 * var(--s)), min(12cqi, calc(12cqi * 17 / var(--laenge, 13))))); line-height: 1.1; display: flex; align-items: baseline; justify-content: center; flex-wrap: nowrap; white-space: nowrap; gap: .3em; font-variant-numeric: lining-nums tabular-nums; }
 .eingabe { min-width: 2.2ch; padding: 0 .2em; border-bottom: 4px solid var(--tupfi); color: var(--weiss); }
 .eingabe.leer { color: rgba(255, 255, 255, 0.55); }
 .ist-richtig .eingabe { border-color: var(--gut-rand); }
@@ -384,7 +384,7 @@ dialog .knopfreihe { margin-top: var(--abstand); }
 /* Tafel/Beamer (nur Ingo zeigt dort): Üben breiter, Aufgabe, Rechenweg und Tipp-Bild größer */
 @media (orientation: landscape) and (min-width: 1600px) {
   .ueben { width: min(100%, calc(1640 * var(--s))); }
-  .aufgabe { font-size: max(32px, min(calc(150 * var(--s)), 12cqi)); }
+  .aufgabe { font-size: max(24px, min(calc(150 * var(--s)), min(12cqi, calc(12cqi * 17 / var(--laenge, 13))))); }
   .rueck__titel { font-size: calc(64 * var(--s)); }
   .rueck__weg { font-size: calc(46 * var(--s)); max-width: none; }
   .tipp__stufe p { font-size: calc(42 * var(--s)); }
@@ -415,3 +415,6 @@ dialog .knopfreihe { margin-top: var(--abstand); }
 /* Klasse 4: Kachel "Mit Stufenzahlen" unter den Reihen (Etappe 7b) */
 .stufen-block { gap: calc(14 * var(--s)); margin-top: calc(20 * var(--s)); }
 .bereich.stufen { width: 100%; min-height: calc(150 * var(--s)); border: 3px solid var(--tupfi); }
+/* Lange Aufgaben (Klasse 4, z. B. 360 000 + 640 000 = 1 000 000): --laenge = Zeichen der gelösten Aufgabe, Schrift wird kleiner */
+/* Klasse 4: Lücken-Aufgabe "3 600 + ? = 10 000", Eingabe in der Mitte (Etappe 7c) */
+.aufgabe .aufgabe__text + .eingabe + .aufgabe__text { margin-left: .2em; }

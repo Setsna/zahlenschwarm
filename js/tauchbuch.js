@@ -1,5 +1,5 @@
 /* Zahlenschwarm: Fortschritt fürs Tauchbuch (Etappe 5a). Ohne Bildschirm-Code, damit es testbar bleibt.
-   - Fisch: für jede Aufgabe (bei Plus/Minus und Stufenzahlen jedes Format), die zum ersten Mal sicher ist. Höchstens 220.
+   - Fisch: für jede Aufgabe (bei Plus/Minus und Stufenzahlen jedes Format), die zum ersten Mal sicher ist. Höchstens 229.
    - Stempel: für jede Reihe, deren Aufgaben alle zugleich sicher sind (10 Einmaleins, 10 Geteilt, Plus, Minus).
    - Fische und Stempel gehen nie verloren, auch wenn eine Aufgabe später zurückrutscht (keine Verlust-Mechanik).
    - Selbsteinschätzung je Stempel: leicht, gut oder wackelig (Ingo, 11.11.2026). */
@@ -7,7 +7,7 @@
   'use strict';
   const C = ZS.config;
 
-  /* Alle Stempel in fester Reihenfolge: 22 für Klasse 3, dazu 2 für Klasse 4 (Stufenzahlen, Etappe 7b).
+  /* Alle Stempel in fester Reihenfolge: 22 für Klasse 3, dazu 4 für Klasse 4 (Stufenzahlen 7b, Plus/Minus bis 1 000 000 7c).
      Ohne Klasse: alle (so gehen Fische und Stempel nach einem Wechsel 4 → 3 nicht verloren). */
   function stempelListe(klasse = 4) {
     const A = ZS.aufgaben, liste = [];
@@ -18,6 +18,8 @@
     if (klasse >= 4) {
       liste.push({ key: 'stufenmal', gruppe: 'mal', klasse4: true, kurz: '·10', name: 'Mal mit Stufenzahlen', titel: 'Mal mit Stufenzahlen', aufgaben: A.formate('stufenmal') });
       liste.push({ key: 'stufengeteilt', gruppe: 'geteilt', klasse4: true, kurz: ':10', name: 'Geteilt mit Stufenzahlen', titel: 'Geteilt mit Stufenzahlen', aufgaben: A.formate('stufengeteilt') });
+      liste.push({ key: 'plusgross', gruppe: 'plusminus', klasse4: true, kurz: '+', name: 'Plus bis 1 000 000', titel: 'Plus bis 1 000 000', aufgaben: A.formate('plusgross') });
+      liste.push({ key: 'minusgross', gruppe: 'plusminus', klasse4: true, kurz: A.MINUS, name: 'Minus bis 1 000 000', titel: 'Minus bis 1 000 000', aufgaben: A.formate('minusgross') });
     }
     return liste;
   }
@@ -30,7 +32,7 @@
     const art = String(artOderId).split(':')[0];
     if (art === 'stufenmal') return 'mal';
     if (art === 'stufengeteilt') return 'geteilt';
-    return art === 'plus' || art === 'minus' ? 'plusminus' : art;
+    return ['plus', 'minus', 'plusgross', 'minusgross'].includes(art) ? 'plusminus' : art;
   };
 
   /* Trägt neue Fische und Stempel ein (auch für alte Stände von vor Etappe 5).
@@ -96,5 +98,5 @@
       : `<svg class="stempel-svg stempel-svg--offen" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-dasharray="6 6"/><text x="50" y="${lang ? 59 : 62}" text-anchor="middle" font-size="${lang ? 28 : 36}" fill="rgba(255,255,255,0.6)">${text}</text></svg>`;
   }
 
-  ZS.tauchbuch = { stempelListe, alleAufgaben, bereichVon, nachtragen, fische, kannListe, GEFUEHLE, zeitText, stempelSvg, FARBE, HOECHSTENS_FISCHE: 220 };
+  ZS.tauchbuch = { stempelListe, alleAufgaben, bereichVon, nachtragen, fische, kannListe, GEFUEHLE, zeitText, stempelSvg, FARBE, HOECHSTENS_FISCHE: 229 };
 })();

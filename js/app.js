@@ -114,7 +114,7 @@
       ${heuteKarte()}
       <section class="bereiche-block" aria-labelledby="h-bereiche">
         <h2 id="h-bereiche" class="abschnitt hof">Wohin schwimmst du heute?</h2>
-        <ul class="bereiche">${BEREICHE.map(bereichKarte).join('')}</ul>
+        <ul class="bereiche">${BEREICHE.map(b => bereichKarte(b.id === 'plusminus' && k.klasse >= 4 ? { ...b, text: 'Rechnen im Kopf bis 1\u202F000\u202F000' } : b)).join('')}</ul>
       </section>
       <p class="knopfreihe">
         <button type="button" class="knopf" data-aktion="tauchbuch">Mein Tauchbuch</button>
@@ -134,6 +134,8 @@
   };
   /* Klasse 4: Mal und Geteilt mit Stufenzahlen (Etappe 7b). Beispiel auf der Kachel ohne Lösung. */
   const STUFEN = {
+    plusgross: { name: 'Plus bis 1\u202F000\u202F000', zurueck: 'plusminus' },
+    minusgross: { name: 'Minus bis 1\u202F000\u202F000', zurueck: 'plusminus' },
     stufenmal: { name: 'Mal mit Stufenzahlen', zurueck: 'mal', beispiel: '30 · 4, 300 · 4, 3\u202F000 · 4, 30 · 40' },
     stufengeteilt: { name: 'Geteilt mit Stufenzahlen', zurueck: 'geteilt', beispiel: '120 : 4, 1\u202F200 : 4, 12\u202F000 : 4, 1\u202F200 : 40' }
   };
@@ -194,12 +196,16 @@
       : `<div class="fenster bereich gemischt bereich--bald"><span class="bereich__titel">Gemischt</span><span class="bereich__text">Geht los, sobald du Plus oder Minus geübt hast.</span></div>`;
     zeigen(`
       ${zurueckOben()}
-      ${kopf('Plus und Minus', 'Rechnen im Kopf bis 1000. Was übst du heute?', false)}
+      ${kopf('Plus und Minus', `Rechnen im Kopf bis ${klasse4() ? '1\u202F000\u202F000' : '1000'}. Was übst du heute?`, false)}
       <section class="bereiche-block" aria-label="Plus und Minus">
         <ul class="bereiche zwei">${kacheln}</ul>
         ${TUPFEN_LEGENDE}
         ${gemischt}
       </section>
+      ${klasse4() ? `<section class="bereiche-block stufen-block" aria-labelledby="h-gross">
+        <h2 id="h-gross" class="abschnitt hof">Klasse 4: bis 1\u202F000\u202F000</h2>
+        <ul class="bereiche zwei">${ZS.aufgaben.GROSS_ARTEN.map(st => `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="stufen" data-art="${st}"><span class="reihe__zahl">${st === 'plusgross' ? '+' : ZS.aufgaben.MINUS}</span><span class="bereich__text">${STUFEN[st].name}</span>${reihenTupfen(null, st, ZS.aufgaben.formate(st))}</button></li>`).join('')}</ul>
+      </section>` : ''}
 `, 'Plus und Minus');
   }
 
@@ -231,7 +237,7 @@
       if (i === 0) liste.push({ nr: 'plus:alle', aufgaben: ZS.aufgaben.formate('plus') });
       if (i === 1) liste.push({ nr: 'minus:alle', aufgaben: ZS.aufgaben.formate('minus') });
     });
-    if (klasse4()) for (const st of ZS.aufgaben.STUFEN_ARTEN) liste.push({ nr: `${st}:alle`, aufgaben: ZS.aufgaben.formate(st) });
+    if (klasse4()) for (const st of [...ZS.aufgaben.STUFEN_ARTEN, ...ZS.aufgaben.GROSS_ARTEN]) liste.push({ nr: `${st}:alle`, aufgaben: ZS.aufgaben.formate(st) });
     return liste;
   }
   function heuteKarte() {
@@ -328,7 +334,7 @@
         ${gruppe('mal', 'Einmaleins')}
         ${gruppe('geteilt', 'Geteilt')}
         ${gruppe('plusminus', 'Plus und Minus')}
-        ${klasse4Stempel.length ? `<h3>Klasse 4: Mit Stufenzahlen</h3><ul class="stempelfeld">${klasse4Stempel.map(st => stempelKarte(st, k)).join('')}</ul>` : ''}
+        ${klasse4Stempel.length ? `<h3>Klasse 4</h3><ul class="stempelfeld">${klasse4Stempel.map(st => stempelKarte(st, k)).join('')}</ul>` : ''}
       </section>
       <section class="fenster tauchbuch" aria-labelledby="h-kann">
         <h2 id="h-kann">Das kann ich schon</h2>
@@ -418,7 +424,7 @@
       <details class="fenster erwachsene">
         <summary><h2 id="h-erw">Für Lehrkräfte und Eltern</h2></summary>
         <div class="erwachsene__inhalt">
-          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000. Beim Anlegen wählt jedes Kind seine Klasse. In Klasse 4 kommen Mal- und Geteilt-Aufgaben mit Stufenzahlen dazu (30 · 4, 300 · 4, 3 000 · 4, 30 · 40 und die Umkehraufgaben). Sie beruhen immer auf einer Aufgabe aus dem kleinen Einmaleins und werden über den Stellenwert erklärt. Plus und Minus bis 1 000 000 folgen. Ändern lässt sich die Klasse im Tauchbuch.</p>
+          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000. Beim Anlegen wählt jedes Kind seine Klasse. In Klasse 4 kommen Mal- und Geteilt-Aufgaben mit Stufenzahlen dazu (30 · 4, 300 · 4, 3 000 · 4, 30 · 40 und die Umkehraufgaben). Sie beruhen immer auf einer Aufgabe aus dem kleinen Einmaleins und werden über den Stellenwert erklärt. Dazu kommt Plus und Minus im Kopf bis 1 000 000 mit Tausendern, Hundertern und Zehntausendern, auch über den vollen Tausender oder Zehntausender, und das Ergänzen bis zu einer Stufenzahl (3 600 + ? = 10 000). Ändern lässt sich die Klasse im Tauchbuch.</p>
 
           <h3>So ist das Üben gedacht</h3>
           <p>Jede Aufgabe hat ihren eigenen Lernstand. Was ein Kind noch nicht sicher kann, kommt öfter und auch an späteren Tagen wieder. Was es sicher kann, kommt seltener. Als sicher gilt eine Aufgabe erst, wenn das Kind sie an mehreren Tagen zügig und ohne Tipp gelöst hat. Bei Plus und Minus zählt der Lernstand je Aufgabenart, zum Beispiel „Einer mit Übergang“.</p>
@@ -480,7 +486,7 @@
       else rundeStarten(reiheVon(r, art), ansichtStart, reihenTitel(art, r));
     }
     else if (a === 'bereich' && b.dataset.id === 'plusminus') ansichtPlusMinus();
-    else if (a === 'stufen' && STUFEN[b.dataset.art]) { const st = b.dataset.art; rundeStarten(ZS.aufgaben.formate(st), () => ansichtReihen(STUFEN[st].zurueck), STUFEN[st].name); }
+    else if (a === 'stufen' && STUFEN[b.dataset.art]) { const st = b.dataset.art; rundeStarten(ZS.aufgaben.formate(st), () => STUFEN[st].zurueck === 'plusminus' ? ansichtPlusMinus() : ansichtReihen(STUFEN[st].zurueck), STUFEN[st].name); }
     else if (a === 'pm') rundeStarten(ZS.aufgaben.formate(b.dataset.op), ansichtPlusMinus, PM[b.dataset.op].name);
     else if (a === 'pm-gemischt') rundeStarten(pmBegonnen().flatMap(op => ZS.aufgaben.formate(op)), ansichtPlusMinus, 'Plus und Minus gemischt');
     else if (a === 'start') ansichtStart();

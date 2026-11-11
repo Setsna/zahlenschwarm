@@ -79,7 +79,9 @@
         </div>
         <div class="ueben__flaeche">
           <div class="fenster aufgabe-fenster">
-            <h1 id="h-aufgabe" class="aufgabe"><span class="aufgabe__text">${esc(auf.text)} =</span> <output id="eingabe" class="eingabe" aria-label="Deine Antwort">?</output></h1>
+            <h1 id="h-aufgabe" class="aufgabe" style="--laenge:${Math.max(13, A.mitLoesung(auf).length)}">${auf.luecke
+              ? `<span class="aufgabe__text">${esc(auf.luecke.vor)}</span> <output id="eingabe" class="eingabe" aria-label="Deine Antwort">?</output> <span class="aufgabe__text">${esc(auf.luecke.nach)}</span>`
+              : `<span class="aufgabe__text">${esc(auf.text)} =</span> <output id="eingabe" class="eingabe" aria-label="Deine Antwort">?</output>`}</h1>
             <div id="rueck" class="rueck"></div>
             <div id="tipp" class="tipp" hidden></div>
           </div>
@@ -216,7 +218,7 @@
     const st = gemerkt.stempel.length ? ZS.tauchbuch.stempelListe().find(x => x.key === gemerkt.stempel[0]) : null;
     const stempelText = st ? ` Gestempelt! ${grossAnfang(st.name)} sitzt. Wie fühlt sich ${st.name} an?` : '';
     if (richtig && zuegig) {
-      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p>${fisch}`, `Richtig! ${auf.text} = ${auf.loesung}.${fischText}${stempelText}`,
+      rueckmelden(`<p class="rueck__titel rueck--gut">${HAKEN} Richtig!</p>${fisch}`, `Richtig! ${A.mitLoesung(auf)}.${fischText}${stempelText}`,
         st ? stempelMoment(st) + weiterKnopf() : '');
       if (st) app.querySelector('[data-u="gefuehl"]').focus();
       else z.weiterTimer = setTimeout(naechste, C.pauseNachRichtigSek * 1000);
@@ -235,7 +237,7 @@
       o.classList.add('ist-loesung');
       o.setAttribute('aria-label', 'Richtige Lösung');
       rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__eigene">Du hattest ${esc(A.zahlText(auf, z.eingabe))}</p><div class="rueck__weg">${block(erkl[0])}</div>`,
-        `Fast! ${auf.text} = ${auf.loesung}. ${A.erklaerungText([erkl[0]])}`, weiterKnopf());
+        `Fast! ${A.mitLoesung(auf)}. ${A.erklaerungText([erkl[0]])}`, weiterKnopf());
       fokusWeiter();
     }
   }

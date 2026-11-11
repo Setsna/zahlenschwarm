@@ -40,9 +40,9 @@ ZS.config = {
   /* Richtig, aber langsam: so lange bleibt "So geht es noch schneller" stehen, dann geht es von selbst weiter */
   pauseNachLangsamSek: 4,
   /* Klasse 4: stufenmal bis 81 000 (5 Ziffern), stufengeteilt bis 3 000 (4 Ziffern) */
-  eingabeZiffern: { mal: 3, geteilt: 3, plus: 4, minus: 4, stufenmal: 5, stufengeteilt: 4 },
+  eingabeZiffern: { mal: 3, geteilt: 3, plus: 4, minus: 4, stufenmal: 5, stufengeteilt: 4, plusgross: 7, minusgross: 6 },
   /* "zügig" = Zeit von der Anzeige der Aufgabe bis zur ersten getippten Ziffer, in Sekunden */
-  zuegig: { mal: 5, geteilt: 8, plus: 8, minus: 8, mitUebergang: 10, stufenmal: 8, stufengeteilt: 10 },
+  zuegig: { mal: 5, geteilt: 8, plus: 8, minus: 8, mitUebergang: 10, stufenmal: 8, stufengeteilt: 10, plusgross: 10, minusgross: 10 },
   /* Klasse 4, Stufenzahlen: so oft (0 bis 1) steckt eine Einmaleins-Aufgabe dahinter, die das Kind schon sicher kann */
   stufenSichereKernaufgabe: 0.7,
   /* Lernstufen: Abstand in Tagen je Stufe 0–4; mindestAbstand: dieselbe Aufgabe höchstens jede 4. Aufgabe;

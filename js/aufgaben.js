@@ -110,6 +110,7 @@
     if (aufgabe.art === 'geteilt') return erklaerungGeteilt(aufgabe);
     if (aufgabe.art === 'plus' || aufgabe.art === 'minus') return erklaerungPlusMinus(aufgabe);
     if (istStufe(aufgabe.art)) return erklaerungStufe(aufgabe);
+    if (istGross(aufgabe.art)) return erklaerungGross(aufgabe);
     const { a, b, loesung: p } = aufgabe;
     const bloecke = [];
     if (a === 1 && b !== 2) {
@@ -230,6 +231,7 @@
     if (aufgabe.art === 'geteilt') return tippsGeteilt(aufgabe);
     if (aufgabe.art === 'plus' || aufgabe.art === 'minus') return tippsPlusMinus(aufgabe);
     if (istStufe(aufgabe.art)) return tippsStufe(aufgabe);
+    if (istGross(aufgabe.art)) return tippsGross(aufgabe);
     const { a, b } = aufgabe;
     return [
       { stufe: 1, text: strategie(a, b) },
@@ -261,9 +263,9 @@
 
   /* Platzhalter eines Formats: trägt den Lernstand, die echte Aufgabe erzeugt konkret() */
   function format(op, f) {
-    return { id: `${op}:${f}`, art: op, format: f, reihe: f, platzhalter: true, name: istStufe(op) ? STUFEN_NAME[op][f] : FORMAT_NAME[f] };
+    return { id: `${op}:${f}`, art: op, format: f, reihe: f, platzhalter: true, name: istStufe(op) ? STUFEN_NAME[op][f] : istGross(op) ? GROSS_NAME[f] : FORMAT_NAME[f] };
   }
-  const formate = op => (istStufe(op) ? STUFEN_FORMATE : FORMATE).map(f => format(op, f));
+  const formate = op => (istStufe(op) ? STUFEN_FORMATE : istGross(op) ? GROSS_FORMATE[op] : FORMATE).map(f => format(op, f));
 
   /* Passt das Paar x, y zum Format? (Auch der Test nutzt eine eigene, unabhängige Prüfung.) */
   function passt(op, f, x, y) {
@@ -318,7 +320,7 @@
   /* Aus einem Platzhalter eine echte Aufgabe machen; echte Aufgaben bleiben, wie sie sind */
   /* kind (freiwillig): bei Stufenzahlen kommen bevorzugt Einmaleins-Aufgaben dran, die das Kind schon sicher kann */
   const konkret = (a, zufall = Math.random, kind = null) => !a || !a.platzhalter ? a
-    : istStufe(a.art) ? erzeugeStufe(a.art, a.format, zufall, kind) : erzeuge(a.art, a.format, zufall);
+    : istStufe(a.art) ? erzeugeStufe(a.art, a.format, zufall, kind) : istGross(a.art) ? erzeugeGross(a.art, a.format, zufall) : erzeuge(a.art, a.format, zufall);
 
   /* Einer-Schritt, bei Übergang in zwei Schritten über den vollen Zehner */
   function einerSchritte(op, start, e, kopf) {
@@ -505,6 +507,109 @@
     throw new Error(`Keine Aufgabe für ${art} Format ${f}`);
   }
 
+  /* ---------- Klasse 4: Plus und Minus bis 1 000 000 (Etappe 7c) ---------- */
+  /* LP Thüringen: Zahlenraum bis 1 000 000 [PDF S. 13], mündlich rechnen [PDF S. 14].
+     Formate (Mini-Spec Klasse 4, freigegeben), Lernstand je Format:
+       1 reine Tausender, ohne Übergang     24 000 + 3 000      27 000 − 3 000
+       2 reine Tausender, mit Übergang      34 000 + 8 000      42 000 − 8 000
+       3 Hunderter, mit Übergang            4 700 + 500         5 200 − 500
+       4 Zehntausender                      230 000 + 70 000    300 000 − 70 000
+       5 nur Plus: bis zur Stufenzahl       3 600 + ? = 10 000
+     Bei Übergang immer zwei echte Schritte (wie in Klasse 3). Kein Ergebnis unter 1 oder über 1 000 000. */
+  const GROSS_ARTEN = ['plusgross', 'minusgross'];
+  const GROSS_FORMATE = { plusgross: [1, 2, 3, 4, 5], minusgross: [1, 2, 3, 4] };
+  const GROSS_NAME = { 1: 'reine Tausender, ohne Übergang', 2: 'reine Tausender, mit Übergang', 3: 'Hunderter, mit Übergang', 4: 'Zehntausender', 5: 'bis zur Stufenzahl ergänzen' };
+  const istGross = art => GROSS_ARTEN.includes(art);
+  const GROSS_STELLE = { 1: 1000, 2: 1000, 3: 100, 4: 10000 };
+  const GROSS_WORT = { 1000: 'Tausender', 100: 'Hunderter', 10000: 'Zehntausender' };
+  const NAECHSTE_WORT = { 100: 'Tausender', 1000: 'Zehntausender', 10000: 'Hunderttausender' };
+  const STELLE_WORT = { 100: 'Hunderter', 1000: 'Tausender', 10000: 'Zehntausender', 100000: 'Hunderttausender' };
+
+  /* Passt das Paar zum Format? x und y in Stellen-Einheiten: x = k · s, y = m · s */
+  function passtGross(art, f, k, m) {
+    const plus = art === 'plusgross', e = k % 10;
+    const r = plus ? k + m : k - m, s = GROSS_STELLE[f];
+    if (m < 1 || m > 9 || r * s < 1 || r * s > 1000000) return false;
+    switch (f) {
+      case 1: return k >= 1 && (plus ? e + m <= 9 : e >= m && r >= 1);
+      case 2: case 3: return k >= 11 && e !== 0 && (plus ? e + m > 10 : e < m);
+      case 4: return k >= 1 && k <= 99 && r >= 1;
+    }
+    return false;
+  }
+  function grossAufgabe(art, f, k, m) {
+    const plus = art === 'plusgross', s = GROSS_STELLE[f], x = k * s, y = m * s, r = plus ? x + y : x - y;
+    const uebergang = f === 2 || f === 3 || (f === 4 && Math.floor(k / 10) !== Math.floor((plus ? k + m : k - m) / 10));
+    return { id: `${art}:${f}`, art, format: f, reihe: f, k, m, x, y, uebergang, gruppiert: true,
+      text: `${fz(x)} ${plus ? '+' : MINUS} ${fz(y)}`, loesung: r };
+  }
+  /* Ergänzen: x + ? = S mit S = 1 000, 10 000, 100 000 oder 1 000 000; x hat zwei Stellen ungleich 0 (3 600) */
+  function ergaenzAufgabe(S, k) {
+    const x = k * S / 100;
+    return { id: 'plusgross:5', art: 'plusgross', format: 5, reihe: 5, x, ziel: S, uebergang: true, gruppiert: true,
+      luecke: { vor: `${fz(x)} +`, nach: `= ${fz(S)}` }, text: `${fz(x)} + ? = ${fz(S)}`, loesung: S - x };
+  }
+  const ZIELE = [1000, 10000, 100000, 1000000];
+
+  function erklaerungGross(t) {
+    const { art, format: f, loesung: r } = t, plus = art === 'plusgross', o = plus ? '+' : MINUS;
+    if (f === 5) {
+      const schritt = t.ziel / 10, voll = Math.ceil(t.x / schritt) * schritt, a1 = voll - t.x, a2 = t.ziel - voll;
+      return [[`Erst bis zum vollen ${STELLE_WORT[schritt]}:`, `${fz(t.x)} + ${fz(a1)} = ${fz(voll)}`,
+        `Dann bis ${fz(t.ziel)}:`, `${fz(voll)} + ${fz(a2)} = ${fz(t.ziel)}`, `Zusammen: ${fz(a1)} + ${fz(a2)} = ${fz(r)}`]];
+    }
+    const s = GROSS_STELLE[f], W = GROSS_WORT[s], rk = r / s, also = `Also: ${fz(t.x)} ${o} ${fz(t.y)} = ${fz(r)}`;
+    if (f === 1) return [['Nur die Tausender ändern sich:', `${t.k} Tausender ${plus ? 'und' : 'minus'} ${t.m} Tausender ${sind(rk)} ${rk} Tausender`, also]];
+    if (f === 4) return [['Rechne mit Zehntausendern:', `${t.k} Zehntausender ${plus ? 'und' : 'minus'} ${t.m} Zehntausender ${sind(rk)} ${rk} Zehntausender`, also]];
+    /* Format 2 und 3: über den vollen Zehntausender bzw. Tausender */
+    const e = t.k % 10, teil = (plus ? 10 - e : e) * s, voll = plus ? t.x + teil : t.x - teil;
+    return [[`${plus ? 'Erst' : 'Erst zurück'} bis zum vollen ${NAECHSTE_WORT[s]}:`, `${fz(t.x)} ${o} ${fz(teil)} = ${fz(voll)}`,
+      'Dann der Rest:', `${fz(voll)} ${o} ${fz(t.y - teil)} = ${fz(r)}`]];
+  }
+
+  function tippsGross(t) {
+    const { art, format: f } = t, plus = art === 'plusgross', o = plus ? '+' : MINUS;
+    const dazu = (n, wort) => plus ? `Dazu ${n === 1 ? 'kommt' : 'kommen'} ${n} ${wort}.` : `Davon ${n === 1 ? 'geht' : 'gehen'} ${n} ${wort} weg.`;
+    let t1, t2, t3;
+    if (f === 5) {
+      const schritt = t.ziel / 10, voll = Math.ceil(t.x / schritt) * schritt;
+      t1 = `Rechne erst bis zum vollen ${STELLE_WORT[schritt]}.`;
+      t2 = `${fz(t.x)} + ${fz(voll - t.x)} = ${fz(voll)}. Wie weit ist es dann noch bis ${fz(t.ziel)}?`;
+      t3 = `Von ${fz(voll)} bis ${fz(t.ziel)} sind es ${fz(t.ziel - voll)}. Zähle beide Schritte zusammen.`;
+    } else if (f === 1 || f === 4) {
+      const W = GROSS_WORT[GROSS_STELLE[f]], rk = t.loesung / GROSS_STELLE[f];
+      t1 = `Schau nur auf die ${W}.`;
+      t2 = `${fz(t.x)} ${f === 1 ? 'hat' : 'sind'} ${t.k} ${W}. ${dazu(t.m, W)}`;
+      t3 = `${t.k} ${W} ${plus ? 'und' : 'minus'} ${t.m} ${W} ${sind(rk)} ${rk} ${W}.`;
+    } else {
+      const s = GROSS_STELLE[f], e = t.k % 10, teil = (plus ? 10 - e : e) * s;
+      t1 = plus ? `Rechne erst bis zum vollen ${NAECHSTE_WORT[s]}.` : `Rechne erst zurück bis zum vollen ${NAECHSTE_WORT[s]}.`;
+      t2 = `Zerlege die ${fz(t.y)} in ${fz(teil)} und ${fz(t.y - teil)}.`;
+      t3 = `${fz(t.x)} ${o} ${fz(teil)} = ${fz(plus ? t.x + teil : t.x - teil)}. ${plus ? 'Jetzt kommt noch der Rest dazu.' : 'Jetzt geht noch der Rest weg.'}`;
+    }
+    return [{ stufe: 1, text: t1 }, { stufe: 2, text: t2 }, { stufe: 3, text: t3 }];
+  }
+
+  function erzeugeGross(art, f, zufall = Math.random) {
+    for (let i = 0; i < 10000; i++) {
+      let t;
+      if (f === 5) {
+        const S = ZIELE[Math.floor(zufall() * ZIELE.length)], k = zahl(11, 99, zufall);
+        /* zwei echte Schritte: k nicht durch 10 teilbar (3 600, nicht 3 000) */
+        if (k % 10 === 0) continue;
+        t = ergaenzAufgabe(S, k);
+      } else {
+        const kMax = { 1: 99, 2: 99, 3: 999, 4: 99 }[f];
+        const k = zahl(1, kMax, zufall), m = zahl(1, 9, zufall);
+        if (!passtGross(art, f, k, m)) continue;
+        t = grossAufgabe(art, f, k, m);
+      }
+      if (!zahlenIn(t.text).includes(t.loesung) && tippsGross(t).some(s => zahlenIn(s.text).includes(t.loesung))) continue;
+      return t;
+    }
+    throw new Error(`Keine Aufgabe für ${art} Format ${f}`);
+  }
+
   /* ---------- Antwort prüfen ---------- */
   /* Eingabe ist der Text aus dem Ziffernfeld. Leere Eingabe zählt nicht als Antwort. */
   /* Höchstens so viele Ziffern, wie die Lösung haben kann: Einmaleins und Geteilt 3, Plus und Minus 4 (bis 1000) */
@@ -517,6 +622,10 @@
 
   /* Anzeige einer Lösung oder Eingabe: bei Klasse-4-Aufgaben mit schmalem Abstand */
   const zahlText = (aufgabe, n) => aufgabe && aufgabe.gruppiert ? gruppiere(n) : String(n);
+  /* Ganze Aufgabe mit Lösung, z. B. "30 · 4 = 120" oder bei einer Lücke "3 600 + 6 400 = 10 000" */
+  const mitLoesung = aufgabe => aufgabe.luecke
+    ? `${aufgabe.luecke.vor} ${zahlText(aufgabe, aufgabe.loesung)} ${aufgabe.luecke.nach}`
+    : `${aufgabe.text} = ${zahlText(aufgabe, aufgabe.loesung)}`;
 
-  ZS.aufgaben = { STUFEN_ARTEN, STUFEN_FORMATE, STUFEN_NAME, istStufe, stufenAufgabe, erzeugeStufe, gruppiere, zahlText, MAL, GETEILT, MINUS, FORMATE, FORMAT_NAME, format, formate, passt, erzeuge, konkret, ziffern, mal, geteilt, reihe, ausId, mischen, runde, erklaerung, erklaerungText, tipps, pruefen };
+  ZS.aufgaben = { GROSS_ARTEN, GROSS_FORMATE, GROSS_NAME, istGross, passtGross, grossAufgabe, ergaenzAufgabe, erzeugeGross, mitLoesung, STUFEN_ARTEN, STUFEN_FORMATE, STUFEN_NAME, istStufe, stufenAufgabe, erzeugeStufe, gruppiere, zahlText, MAL, GETEILT, MINUS, FORMATE, FORMAT_NAME, format, formate, passt, erzeuge, konkret, ziffern, mal, geteilt, reihe, ausId, mischen, runde, erklaerung, erklaerungText, tipps, pruefen };
 })();
