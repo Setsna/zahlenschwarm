@@ -109,6 +109,7 @@
   function erklaerung(aufgabe) {
     if (aufgabe.art === 'geteilt') return erklaerungGeteilt(aufgabe);
     if (aufgabe.art === 'plus' || aufgabe.art === 'minus') return erklaerungPlusMinus(aufgabe);
+    if (istStufe(aufgabe.art)) return erklaerungStufe(aufgabe);
     const { a, b, loesung: p } = aufgabe;
     const bloecke = [];
     if (a === 1 && b !== 2) {
@@ -228,6 +229,7 @@
   function tipps(aufgabe) {
     if (aufgabe.art === 'geteilt') return tippsGeteilt(aufgabe);
     if (aufgabe.art === 'plus' || aufgabe.art === 'minus') return tippsPlusMinus(aufgabe);
+    if (istStufe(aufgabe.art)) return tippsStufe(aufgabe);
     const { a, b } = aufgabe;
     return [
       { stufe: 1, text: strategie(a, b) },
@@ -259,9 +261,9 @@
 
   /* Platzhalter eines Formats: trägt den Lernstand, die echte Aufgabe erzeugt konkret() */
   function format(op, f) {
-    return { id: `${op}:${f}`, art: op, format: f, reihe: f, platzhalter: true, name: FORMAT_NAME[f] };
+    return { id: `${op}:${f}`, art: op, format: f, reihe: f, platzhalter: true, name: istStufe(op) ? STUFEN_NAME[op][f] : FORMAT_NAME[f] };
   }
-  const formate = op => FORMATE.map(f => format(op, f));
+  const formate = op => (istStufe(op) ? STUFEN_FORMATE : FORMATE).map(f => format(op, f));
 
   /* Passt das Paar x, y zum Format? (Auch der Test nutzt eine eigene, unabhängige Prüfung.) */
   function passt(op, f, x, y) {
@@ -314,7 +316,9 @@
     throw new Error(`Keine Aufgabe für ${op} Format ${f}`);
   }
   /* Aus einem Platzhalter eine echte Aufgabe machen; echte Aufgaben bleiben, wie sie sind */
-  const konkret = (a, zufall = Math.random) => a && a.platzhalter ? erzeuge(a.art, a.format, zufall) : a;
+  /* kind (freiwillig): bei Stufenzahlen kommen bevorzugt Einmaleins-Aufgaben dran, die das Kind schon sicher kann */
+  const konkret = (a, zufall = Math.random, kind = null) => !a || !a.platzhalter ? a
+    : istStufe(a.art) ? erzeugeStufe(a.art, a.format, zufall, kind) : erzeuge(a.art, a.format, zufall);
 
   /* Einer-Schritt, bei Übergang in zwei Schritten über den vollen Zehner */
   function einerSchritte(op, start, e, kopf) {
@@ -401,6 +405,105 @@
     return [{ stufe: 1, text: t1 }, { stufe: 2, text: t2 }, { stufe: 3, text: t3 }];
   }
 
+  /* ---------- Klasse 4: Mal und Geteilt mit Stufenzahlen (Etappe 7b) ---------- */
+  /* LP Thüringen: Grundaufgaben "sicher auf analoge Aufgaben im entsprechenden Zahlenraum übertragen" [PDF S. 14].
+     Jede Aufgabe beruht auf einer Einmaleins-Aufgabe a · b mit a, b von 2 bis 9 (Mini-Spec Klasse 4, freigegeben):
+       Format   Mal (stufenmal)            Geteilt (stufengeteilt)
+       1        30 · 4 oder 4 · 30         120 : 4 = 30
+       2        300 · 4                    1 200 : 4 = 300
+       3        3 000 · 4                  12 000 : 4 = 3 000
+       4        30 · 40                    1 200 : 40 = 30
+     Erklärt wird über den Stellenwert ("3 Zehner · 4 = 12 Zehner"), nicht über "Nullen anhängen".
+     Zahlen ab 1000 stehen mit schmalem Abstand (1 200). Lernstand je Format, wie bei Plus und Minus. */
+  const STUFEN_ARTEN = ['stufenmal', 'stufengeteilt'];
+  const STUFEN_FORMATE = [1, 2, 3, 4];
+  const STUFE = { 1: 10, 2: 100, 3: 1000 };
+  const STUFE_WORT = { 1: 'Zehner', 2: 'Hunderter', 3: 'Tausender' };
+  const STUFEN_NAME = {
+    stufenmal: { 1: 'mit Zehnern', 2: 'mit Hundertern', 3: 'mit Tausendern', 4: 'Zehner mal Zehner' },
+    stufengeteilt: { 1: 'Zehner', 2: 'Hunderter', 3: 'Tausender', 4: 'durch Zehnerzahlen' }
+  };
+  const istStufe = art => STUFEN_ARTEN.includes(art);
+  /* Zahl lesbar: ab 1000 mit schmalem, festem Abstand (U+202F), z. B. 12 000 */
+  const SCHMAL = '\u202F';
+  const gruppiere = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, SCHMAL);
+  const fz = n => n >= 1000 ? gruppiere(n) : String(n);
+
+  function stufenAufgabe(art, f, a, b, vorne = true) {
+    const ab = a * b;
+    const basis = { id: `${art}:${f}`, art, format: f, reihe: f, a, b, gruppiert: true };
+    if (art === 'stufenmal') {
+      if (f === 4) return { ...basis, x: a * 10, y: b * 10, text: `${a * 10} ${MAL} ${b * 10}`, loesung: ab * 100 };
+      const x = a * STUFE[f];
+      return { ...basis, x, vorne, text: vorne ? `${fz(x)} ${MAL} ${b}` : `${b} ${MAL} ${fz(x)}`, loesung: ab * STUFE[f] };
+    }
+    if (f === 4) { const c = ab * 100; return { ...basis, c, d: b * 10, text: `${fz(c)} ${GETEILT} ${b * 10}`, loesung: a * 10 }; }
+    const c = ab * STUFE[f];
+    return { ...basis, c, d: b, text: `${fz(c)} ${GETEILT} ${b}`, loesung: a * STUFE[f] };
+  }
+
+  function erklaerungStufe(t) {
+    const { art, format: f, a, b, loesung: p } = t, ab = a * b;
+    if (art === 'stufenmal') {
+      if (f === 4) return [[`Du kennst ${a} ${MAL} ${b} = ${ab}`, `Dann ist ${t.x} ${MAL} ${b} = ${fz(ab * 10)}`,
+        `${t.y} ist 10-mal so viel wie ${b}:`, `${fz(ab * 10)} ${MAL} 10 = ${fz(p)}`]];
+      const W = STUFE_WORT[f];
+      return [[t.vorne ? `Du kennst ${a} ${MAL} ${b} = ${ab}` : `Du kennst ${b} ${MAL} ${a} = ${ab}`, `${fz(t.x)} sind ${a} ${W}`,
+        t.vorne ? `${a} ${W} ${MAL} ${b} = ${ab} ${W}` : `${b} ${MAL} ${a} ${W} = ${ab} ${W}`, `${ab} ${W} sind ${fz(p)}`]];
+    }
+    if (f === 4) return [[`${fz(t.c)} ${GETEILT} ${t.d} heißt:`, `Wie oft passt die ${t.d} in die ${fz(t.c)}?`, 'Denk an die Malaufgabe:',
+      `${p} ${MAL} ${t.d} = ${fz(t.c)}`, `Also: ${fz(t.c)} ${GETEILT} ${t.d} = ${p}`]];
+    const W = STUFE_WORT[f];
+    return [[`Du kennst ${ab} ${GETEILT} ${b} = ${a}`, `${fz(t.c)} sind ${ab} ${W}`, `${ab} ${W} ${GETEILT} ${b} = ${a} ${W}`, `${a} ${W} sind ${fz(p)}`]];
+  }
+
+  function tippsStufe(t) {
+    const { art, format: f, a, b } = t, ab = a * b;
+    const EINMALEINS = 'Welche Aufgabe aus dem Einmaleins steckt darin?';
+    let t1 = EINMALEINS, t2, t3;
+    if (art === 'stufenmal') {
+      if (f === 4) {
+        t2 = `Rechne erst ${a} ${MAL} ${b}, dann ${t.x} ${MAL} ${b}.`;
+        t3 = `${t.x} ${MAL} ${b} = ${fz(ab * 10)}. ${t.y} ist 10-mal so viel wie ${b}.`;
+      } else {
+        t2 = t.vorne ? `Rechne erst ${a} ${MAL} ${b}.` : `Rechne erst ${b} ${MAL} ${a}.`;
+        t3 = `${t.vorne ? `${a} ${MAL} ${b}` : `${b} ${MAL} ${a}`} = ${ab}. Wie viel sind ${ab} ${STUFE_WORT[f]}?`;
+      }
+    } else if (f === 4) {
+      t1 = `Welche Zahl mal ${t.d} ergibt ${fz(t.c)}?`;
+      t2 = `Denk an ${ab} ${GETEILT} ${b} = ${a}.`;
+      t3 = `${fz(t.c)} ${GETEILT} ${t.d} ist so viel wie ${fz(t.c / 10)} ${GETEILT} ${b}.`;
+    } else {
+      t2 = `Rechne erst ${ab} ${GETEILT} ${b}.`;
+      t3 = `${fz(t.c)} sind ${ab} ${STUFE_WORT[f]}. Teile die ${STUFE_WORT[f]} durch ${b}.`;
+    }
+    return [{ stufe: 1, text: t1 }, { stufe: 2, text: t2 }, { stufe: 3, text: t3 }];
+  }
+
+  /* Ist die Einmaleins-Aufgabe hinter a · b für dieses Kind schon sicher? (ohne Kind: egal) */
+  function kernSicher(kind, art, a, b) {
+    if (!kind || !ZS.lernstand) return false;
+    const id = art === 'stufenmal' ? `mal:${a}:${b}` : `geteilt:${a * b}:${b}`;
+    return ZS.lernstand.status(ZS.lernstand.eintrag(kind, id)) === 'sicher';
+  }
+  const zahlenIn = text => (text.replace(new RegExp(`(\\d)${SCHMAL}(?=\\d)`, 'g'), '$1').match(/\d+/g) || []).map(Number);
+
+  function erzeugeStufe(art, f, zufall = Math.random, kind = null) {
+    const paare = [];
+    for (let a = 2; a <= 9; a++) for (let b = 2; b <= 9; b++) paare.push([a, b]);
+    const sichere = paare.filter(([a, b]) => kernSicher(kind, art, a, b));
+    const pool = sichere.length && zufall() < C.stufenSichereKernaufgabe ? sichere : paare;
+    for (let i = 0; i < 1000; i++) {
+      const [a, b] = pool[Math.floor(zufall() * pool.length)];
+      const t = stufenAufgabe(art, f, a, b, zufall() < 0.5);
+      /* Kein Tipp darf die Lösung nennen (der Test prüft das für alle Aufgaben) */
+      /* (außer die Lösung steht schon in der Aufgabe selbst: 1 600 : 40 = 40) */
+      if (!zahlenIn(t.text).includes(t.loesung) && tippsStufe(t).some(s => zahlenIn(s.text).includes(t.loesung))) continue;
+      return t;
+    }
+    throw new Error(`Keine Aufgabe für ${art} Format ${f}`);
+  }
+
   /* ---------- Antwort prüfen ---------- */
   /* Eingabe ist der Text aus dem Ziffernfeld. Leere Eingabe zählt nicht als Antwort. */
   /* Höchstens so viele Ziffern, wie die Lösung haben kann: Einmaleins und Geteilt 3, Plus und Minus 4 (bis 1000) */
@@ -411,5 +514,8 @@
     return Number(t) === aufgabe.loesung;
   }
 
-  ZS.aufgaben = { MAL, GETEILT, MINUS, FORMATE, FORMAT_NAME, format, formate, passt, erzeuge, konkret, ziffern, mal, geteilt, reihe, ausId, mischen, runde, erklaerung, erklaerungText, tipps, pruefen };
+  /* Anzeige einer Lösung oder Eingabe: bei Klasse-4-Aufgaben mit schmalem Abstand */
+  const zahlText = (aufgabe, n) => aufgabe && aufgabe.gruppiert ? gruppiere(n) : String(n);
+
+  ZS.aufgaben = { STUFEN_ARTEN, STUFEN_FORMATE, STUFEN_NAME, istStufe, stufenAufgabe, erzeugeStufe, gruppiere, zahlText, MAL, GETEILT, MINUS, FORMATE, FORMAT_NAME, format, formate, passt, erzeuge, konkret, ziffern, mal, geteilt, reihe, ausId, mischen, runde, erklaerung, erklaerungText, tipps, pruefen };
 })();

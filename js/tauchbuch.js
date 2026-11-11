@@ -1,5 +1,5 @@
 /* Zahlenschwarm: Fortschritt fürs Tauchbuch (Etappe 5a). Ohne Bildschirm-Code, damit es testbar bleibt.
-   - Fisch: für jede Aufgabe (bei Plus/Minus jedes Format), die zum ersten Mal sicher ist. Höchstens 212.
+   - Fisch: für jede Aufgabe (bei Plus/Minus und Stufenzahlen jedes Format), die zum ersten Mal sicher ist. Höchstens 220.
    - Stempel: für jede Reihe, deren Aufgaben alle zugleich sicher sind (10 Einmaleins, 10 Geteilt, Plus, Minus).
    - Fische und Stempel gehen nie verloren, auch wenn eine Aufgabe später zurückrutscht (keine Verlust-Mechanik).
    - Selbsteinschätzung je Stempel: leicht, gut oder wackelig (Ingo, 11.11.2026). */
@@ -7,13 +7,18 @@
   'use strict';
   const C = ZS.config;
 
-  /* Alle 22 Stempel in fester Reihenfolge */
-  function stempelListe() {
+  /* Alle Stempel in fester Reihenfolge: 22 für Klasse 3, dazu 2 für Klasse 4 (Stufenzahlen, Etappe 7b).
+     Ohne Klasse: alle (so gehen Fische und Stempel nach einem Wechsel 4 → 3 nicht verloren). */
+  function stempelListe(klasse = 4) {
     const A = ZS.aufgaben, liste = [];
     for (const r of C.reihenFolge) liste.push({ key: `mal:${r}`, gruppe: 'mal', kurz: `${r}er`, name: `die ${r}er-Reihe`, titel: `${r}er-Reihe`, aufgaben: A.reihe(r, 'mal') });
     for (const r of C.reihenFolge) liste.push({ key: `geteilt:${r}`, gruppe: 'geteilt', kurz: `: ${r}`, name: `Geteilt durch ${r}`, titel: `Geteilt durch ${r}`, aufgaben: A.reihe(r, 'geteilt') });
     liste.push({ key: 'plus', gruppe: 'plusminus', kurz: '+', name: 'Plus im Kopf', titel: 'Plus im Kopf', aufgaben: A.formate('plus') });
     liste.push({ key: 'minus', gruppe: 'plusminus', kurz: A.MINUS, name: 'Minus im Kopf', titel: 'Minus im Kopf', aufgaben: A.formate('minus') });
+    if (klasse >= 4) {
+      liste.push({ key: 'stufenmal', gruppe: 'mal', klasse4: true, kurz: '·10', name: 'Mal mit Stufenzahlen', titel: 'Mal mit Stufenzahlen', aufgaben: A.formate('stufenmal') });
+      liste.push({ key: 'stufengeteilt', gruppe: 'geteilt', klasse4: true, kurz: ':10', name: 'Geteilt mit Stufenzahlen', titel: 'Geteilt mit Stufenzahlen', aufgaben: A.formate('stufengeteilt') });
+    }
     return liste;
   }
   /* Alle Aufgaben, für die es einen Fisch geben kann */
@@ -23,6 +28,8 @@
   /* Bereich einer Aufgabe für Fischfarbe und Lernzeit */
   const bereichVon = artOderId => {
     const art = String(artOderId).split(':')[0];
+    if (art === 'stufenmal') return 'mal';
+    if (art === 'stufengeteilt') return 'geteilt';
     return art === 'plus' || art === 'minus' ? 'plusminus' : art;
   };
 
@@ -47,11 +54,11 @@
 
   /* "Das kann ich schon": was jetzt sicher ist. Ganze Reihen, bei Plus/Minus auch einzelne Formate. */
   function kannListe(kind) {
-    const A = ZS.aufgaben, liste = [];
-    for (const s of stempelListe()) {
-      if (s.aufgaben.every(a => sicher(kind, a.id))) liste.push(s.gruppe === 'mal' ? `Die ${s.titel}` : s.titel);
-      else if (s.gruppe === 'plusminus') {
-        s.aufgaben.filter(a => sicher(kind, a.id)).forEach(a => liste.push(`${s.key === 'plus' ? 'Plus' : 'Minus'}: ${A.FORMAT_NAME[a.format]}`));
+    const liste = [];
+    for (const s of stempelListe(kind.klasse)) {
+      if (s.aufgaben.every(a => sicher(kind, a.id))) liste.push(s.gruppe === 'mal' && !s.klasse4 ? `Die ${s.titel}` : s.titel);
+      else if (s.gruppe === 'plusminus' || s.klasse4) {
+        s.aufgaben.filter(a => sicher(kind, a.id)).forEach(a => liste.push(`${s.key === 'plus' ? 'Plus' : s.key === 'minus' ? 'Minus' : s.titel}: ${a.name}`));
       }
     }
     return liste;
@@ -89,5 +96,5 @@
       : `<svg class="stempel-svg stempel-svg--offen" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-dasharray="6 6"/><text x="50" y="${lang ? 59 : 62}" text-anchor="middle" font-size="${lang ? 28 : 36}" fill="rgba(255,255,255,0.6)">${text}</text></svg>`;
   }
 
-  ZS.tauchbuch = { stempelListe, alleAufgaben, bereichVon, nachtragen, fische, kannListe, GEFUEHLE, zeitText, stempelSvg, FARBE, HOECHSTENS_FISCHE: 212 };
+  ZS.tauchbuch = { stempelListe, alleAufgaben, bereichVon, nachtragen, fische, kannListe, GEFUEHLE, zeitText, stempelSvg, FARBE, HOECHSTENS_FISCHE: 220 };
 })();

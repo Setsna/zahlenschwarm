@@ -20,7 +20,7 @@
   let z = null; /* Zustand der laufenden Übung */
 
   /* Text sicher einsetzen und jede Rechnung wie "4 + 4 = 8" zusammenhalten, damit sie nicht umbricht */
-  const RECHNUNG = /(\d+(?:\s[+·−:]\s\d+)+(?:\s=\s\d+)?)/g;
+  const RECHNUNG = /(\d+(?:\u202F\d{3})*(?:\s[+·−:]\s\d+(?:\u202F\d{3})*)+(?:\s=\s\d+(?:\u202F\d{3})*)?)/g;
   const mitRechnungen = text => esc(text).replace(RECHNUNG, '<span class="rechnung">$1</span>');
 
   function ansagen(text) {
@@ -108,7 +108,7 @@
   /* ---------- Eingabe ---------- */
   function eingabeZeigen() {
     const o = app.querySelector('#eingabe');
-    o.textContent = z.eingabe || '?';
+    o.textContent = z.eingabe ? A.zahlText(z.aufgabe, z.eingabe) : '?';
     o.classList.toggle('leer', !z.eingabe);
   }
   function ziffer(t) {
@@ -231,10 +231,10 @@
          der Weiter-Knopf sonst aus dem Bild (Ingo, 11.11.2026). Zeilenumbrüche bleiben. */
       /* Die richtige Zahl steht groß in der Aufgabe, die eigene Antwort nur klein darunter (Ingo, 11.11.2026) */
       const o = app.querySelector('#eingabe');
-      o.textContent = auf.loesung;
+      o.textContent = A.zahlText(auf, auf.loesung);
       o.classList.add('ist-loesung');
       o.setAttribute('aria-label', 'Richtige Lösung');
-      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__eigene">Du hattest ${esc(z.eingabe)}</p><div class="rueck__weg">${block(erkl[0])}</div>`,
+      rueckmelden(`<p class="rueck__titel rueck--fast">${WELLE} Fast!</p><p class="rueck__eigene">Du hattest ${esc(A.zahlText(auf, z.eingabe))}</p><div class="rueck__weg">${block(erkl[0])}</div>`,
         `Fast! ${auf.text} = ${auf.loesung}. ${A.erklaerungText([erkl[0]])}`, weiterKnopf());
       fokusWeiter();
     }

@@ -129,9 +129,23 @@
      Etappe 4b: Geteilt hat dieselben Reihen ("durch 2", "durch 5" …) mit eigenem Lernstand. */
   const OFFENE_REIHEN = ZS.config.reihenFolge.slice();
   const ARTEN = {
-    mal: { titel: 'Einmaleins', frage: 'Welche Reihe übst du heute?', kachel: r => [`${r}er`, 'Reihe'], kurz: r => `${r}er` },
-    geteilt: { titel: 'Geteilt', frage: 'Durch welche Zahl teilst du heute?', kachel: r => [`: ${r}`, `durch ${r}`], kurz: r => `durch ${r}` }
+    mal: { titel: 'Einmaleins', frage: 'Welche Reihe übst du heute?', kachel: r => [`${r}er`, 'Reihe'], kurz: r => `${r}er`, stufen: 'stufenmal' },
+    geteilt: { titel: 'Geteilt', frage: 'Durch welche Zahl teilst du heute?', kachel: r => [`: ${r}`, `durch ${r}`], kurz: r => `durch ${r}`, stufen: 'stufengeteilt' }
   };
+  /* Klasse 4: Mal und Geteilt mit Stufenzahlen (Etappe 7b). Beispiel auf der Kachel ohne Lösung. */
+  const STUFEN = {
+    stufenmal: { name: 'Mal mit Stufenzahlen', zurueck: 'mal', beispiel: '30 · 4, 300 · 4, 3\u202F000 · 4, 30 · 40' },
+    stufengeteilt: { name: 'Geteilt mit Stufenzahlen', zurueck: 'geteilt', beispiel: '120 : 4, 1\u202F200 : 4, 12\u202F000 : 4, 1\u202F200 : 40' }
+  };
+  const klasse4 = () => S.aktiv() && S.aktiv().klasse >= 4;
+  function stufenKachel(art) {
+    const st = ARTEN[art].stufen;
+    if (!klasse4()) return '';
+    return `<section class="bereiche-block stufen-block" aria-labelledby="h-stufen">
+        <h2 id="h-stufen" class="abschnitt hof">Klasse 4</h2>
+        <button type="button" class="fenster bereich stufen" data-aktion="stufen" data-art="${st}"><span class="bereich__titel">Mit Stufenzahlen</span><span class="bereich__text">${STUFEN[st].beispiel}</span>${reihenTupfen(null, st, ZS.aufgaben.formate(st))}</button>
+      </section>`;
+  }
   const reiheVon = (r, art) => ZS.aufgaben.reihe(r, art);
   /* Begonnene Reihen: mindestens eine Aufgabe schon geübt */
   const begonneneReihen = art => OFFENE_REIHEN.filter(r => reiheVon(r, art).some(a => ZS.lernstand.eintrag(S.aktiv(), a.id).box > 0));
@@ -162,6 +176,7 @@
         ${TUPFEN_LEGENDE}
         ${gemischt}
       </section>
+      ${stufenKachel(art)}
 `, A_.titel);
   }
 
@@ -196,7 +211,7 @@
     const neuInReihenfolge = kandidaten.some(a => a.platzhalter);
     melden('');
     ZS.ueben.starte({
-      waehler: verlauf => ZS.aufgaben.konkret(ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf, neuInReihenfolge }).aufgabe),
+      waehler: verlauf => ZS.aufgaben.konkret(ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf, neuInReihenfolge }).aufgabe, Math.random, S.aktiv()),
       fertig: (ergebnisse, abgebrochen, neu = {}) => {
         zurueck();
         const n = neu.fische || 0;
@@ -216,13 +231,14 @@
       if (i === 0) liste.push({ nr: 'plus:alle', aufgaben: ZS.aufgaben.formate('plus') });
       if (i === 1) liste.push({ nr: 'minus:alle', aufgaben: ZS.aufgaben.formate('minus') });
     });
+    if (klasse4()) for (const st of ZS.aufgaben.STUFEN_ARTEN) liste.push({ nr: `${st}:alle`, aufgaben: ZS.aufgaben.formate(st) });
     return liste;
   }
   function heuteKarte() {
     const e = ZS.lernstand.empfehlung(S.aktiv(), heuteReihen());
     if (!e.reihe) return '';
     const [art, nr] = e.reihe.split(':');
-    const name = PM[art] ? PM[art].name : art === 'geteilt' ? `Geteilt durch ${nr}` : `${nr}er-Reihe`;
+    const name = PM[art] ? PM[art].name : STUFEN[art] ? STUFEN[art].name : art === 'geteilt' ? `Geteilt durch ${nr}` : `${nr}er-Reihe`;
     const text = {
       faellig: `${name}: Ein paar Aufgaben warten auf dich.`,
       neu: `Neu für dich: ${art === 'mal' ? `die ${nr}er-Reihe` : name}.`,
@@ -277,7 +293,7 @@
 
   /* Tupfi fragt immer nur nach einem Stempel ohne Selbsteinschätzung, damit die Ansicht ruhig bleibt */
   function gefuehlFrage(k) {
-    const T = ZS.tauchbuch, st = T.stempelListe().find(x => k.stempel[x.key] && !k.stempel[x.key].gefuehl);
+    const T = ZS.tauchbuch, st = T.stempelListe(k.klasse).find(x => k.stempel[x.key] && !k.stempel[x.key].gefuehl);
     if (!st) return '';
     return `<div class="tupfi-frage">
         <p id="tb-frage">Tupfi fragt: Wie fühlt sich ${esc(st.name)} an?</p>
@@ -289,8 +305,9 @@
     S.nachtragen();
     const k = S.aktiv(), T = ZS.tauchbuch;
     const fische = T.fische(k);
-    const alle = T.stempelListe();
-    const gruppe = (g, titel) => `<h3>${titel}</h3><ul class="stempelfeld">${alle.filter(st => st.gruppe === g).map(st => stempelKarte(st, k)).join('')}</ul>`;
+    const alle = T.stempelListe(k.klasse);
+    const gruppe = (g, titel) => `<h3>${titel}</h3><ul class="stempelfeld">${alle.filter(st => st.gruppe === g && !st.klasse4).map(st => stempelKarte(st, k)).join('')}</ul>`;
+    const klasse4Stempel = alle.filter(st => st.klasse4);
     const kann = T.kannListe(k);
     const zeit = b => Number(k.zeit[b]) || 0;
     zeigen(`
@@ -311,6 +328,7 @@
         ${gruppe('mal', 'Einmaleins')}
         ${gruppe('geteilt', 'Geteilt')}
         ${gruppe('plusminus', 'Plus und Minus')}
+        ${klasse4Stempel.length ? `<h3>Klasse 4: Mit Stufenzahlen</h3><ul class="stempelfeld">${klasse4Stempel.map(st => stempelKarte(st, k)).join('')}</ul>` : ''}
       </section>
       <section class="fenster tauchbuch" aria-labelledby="h-kann">
         <h2 id="h-kann">Das kann ich schon</h2>
@@ -400,7 +418,7 @@
       <details class="fenster erwachsene">
         <summary><h2 id="h-erw">Für Lehrkräfte und Eltern</h2></summary>
         <div class="erwachsene__inhalt">
-          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000. Beim Anlegen wählt jedes Kind seine Klasse. Die Aufgaben für Klasse 4 kommen nach und nach dazu. Ändern lässt sich die Klasse im Tauchbuch.</p>
+          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000. Beim Anlegen wählt jedes Kind seine Klasse. In Klasse 4 kommen Mal- und Geteilt-Aufgaben mit Stufenzahlen dazu (30 · 4, 300 · 4, 3 000 · 4, 30 · 40 und die Umkehraufgaben). Sie beruhen immer auf einer Aufgabe aus dem kleinen Einmaleins und werden über den Stellenwert erklärt. Plus und Minus bis 1 000 000 folgen. Ändern lässt sich die Klasse im Tauchbuch.</p>
 
           <h3>So ist das Üben gedacht</h3>
           <p>Jede Aufgabe hat ihren eigenen Lernstand. Was ein Kind noch nicht sicher kann, kommt öfter und auch an späteren Tagen wieder. Was es sicher kann, kommt seltener. Als sicher gilt eine Aufgabe erst, wenn das Kind sie an mehreren Tagen zügig und ohne Tipp gelöst hat. Bei Plus und Minus zählt der Lernstand je Aufgabenart, zum Beispiel „Einer mit Übergang“.</p>
@@ -458,9 +476,11 @@
     else if (a === 'heute') {
       const art = b.dataset.art, r = Number(b.dataset.r);
       if (PM[art]) rundeStarten(ZS.aufgaben.formate(art), ansichtStart, PM[art].name);
+      else if (STUFEN[art]) rundeStarten(ZS.aufgaben.formate(art), ansichtStart, STUFEN[art].name);
       else rundeStarten(reiheVon(r, art), ansichtStart, reihenTitel(art, r));
     }
     else if (a === 'bereich' && b.dataset.id === 'plusminus') ansichtPlusMinus();
+    else if (a === 'stufen' && STUFEN[b.dataset.art]) { const st = b.dataset.art; rundeStarten(ZS.aufgaben.formate(st), () => ansichtReihen(STUFEN[st].zurueck), STUFEN[st].name); }
     else if (a === 'pm') rundeStarten(ZS.aufgaben.formate(b.dataset.op), ansichtPlusMinus, PM[b.dataset.op].name);
     else if (a === 'pm-gemischt') rundeStarten(pmBegonnen().flatMap(op => ZS.aufgaben.formate(op)), ansichtPlusMinus, 'Plus und Minus gemischt');
     else if (a === 'start') ansichtStart();
