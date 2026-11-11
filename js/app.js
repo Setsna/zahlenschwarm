@@ -140,6 +140,7 @@
     stufengeteilt: { name: 'Geteilt mit Stufenzahlen', zurueck: 'geteilt', beispiel: '120 : 4, 1\u202F200 : 4, 12\u202F000 : 4, 1\u202F200 : 40' }
   };
   const klasse4 = () => S.aktiv() && S.aktiv().klasse >= 4;
+  /* Klasse 4: Zeile "Gemischt" + "Mit Stufenzahlen" steht über den Reihen, damit sie quer ohne Scrollen sichtbar ist (Ingo, 11.11.2026) */
   /* Kennzeichen auf jeder Klasse-4-Kachel (statt einer eigenen Überschrift, Design-Review Klasse 4) */
   const KLASSE4_MARKE = '<span class="marke-k4">Klasse 4</span>';
   function stufenKachel(art) {
@@ -172,9 +173,10 @@
       ${zurueckOben()}
       ${kopf(A_.titel, A_.frage, false)}
       <section class="bereiche-block" aria-label="Reihen">
+        ${klasse4() ? `<div class="kachel-paar">${gemischt}${stufenKachel(art)}</div>` : ''}
         <ul class="bereiche reihen">${kacheln}</ul>
         ${TUPFEN_LEGENDE}
-        ${klasse4() ? `<div class="kachel-paar">${gemischt}${stufenKachel(art)}</div>` : gemischt}
+        ${klasse4() ? '' : gemischt}
       </section>
 `, A_.titel);
   }

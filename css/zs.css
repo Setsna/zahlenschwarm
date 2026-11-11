@@ -412,8 +412,8 @@ dialog .knopfreihe { margin-top: var(--abstand); }
 .klasse-wahl input:checked + span { background: var(--tupfi); box-shadow: inset 0 0 0 3px var(--navy); }
 .klasse-wahl input:focus-visible + span { outline: 3px solid var(--navy); outline-offset: 2px; box-shadow: 0 0 0 7px var(--weiss); }
 .klasse-zeile { margin-top: calc(-12 * var(--s)); text-align: center; color: var(--navy); font-size: var(--klein); }
-/* Klasse 4: "Mit Stufenzahlen" in einer Zeile neben "Gemischt" (Design-Review Klasse 4), schmal untereinander */
-.kachel-paar { width: 100%; display: grid; gap: calc(28 * var(--s)); grid-template-columns: 1fr; margin-top: calc(28 * var(--s)); }
+/* Klasse 4: "Mit Stufenzahlen" in einer Zeile neben "Gemischt", über den Reihen (Design-Review Klasse 4), schmal untereinander */
+.kachel-paar { width: 100%; display: grid; gap: calc(28 * var(--s)); grid-template-columns: 1fr; }
 @media (min-width: 640px) { .kachel-paar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kachel-paar > .gemischt { margin-top: 0; }
 /* Kennzeichen "Klasse 4" oben in der Kachel, ruhig: Glas-Kante statt Farbe */
