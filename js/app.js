@@ -49,6 +49,11 @@
           <label for="name">Dein Vorname</label>
           <input type="text" id="name" name="name" autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="${ZS.config.nameMaxLaenge}" aria-describedby="name-hinweis name-info">
           <p id="name-hinweis" class="hinweis-feld" aria-live="polite"></p>
+          <fieldset class="klassenwahl" aria-describedby="klasse-hinweis">
+            <legend>In welche Klasse gehst du?</legend>
+            <div class="klassen-knoepfe">${ZS.config.klassen.map(n => `<label class="klasse-wahl"><input type="radio" name="klasse" value="${n}"><span>Klasse ${n}</span></label>`).join('')}</div>
+            <p id="klasse-hinweis" class="hinweis-feld" aria-live="polite"></p>
+          </fieldset>
           <p class="knopfreihe">
             <button type="submit" class="knopf haupt">Los geht's</button>
             ${andere ? '<button type="button" class="knopf leise-knopf" data-aktion="wer">Zurück</button>' : ''}
@@ -60,8 +65,15 @@
     app.querySelector('#neu-form').addEventListener('submit', e => {
       e.preventDefault();
       const feld = app.querySelector('#name');
-      const r = S.anlegen(feld.value);
-      if (!r.kind) { app.querySelector('#name-hinweis').textContent = r.grund; feld.focus(); return; }
+      const wahl = app.querySelector('input[name="klasse"]:checked');
+      const r = S.anlegen(feld.value, wahl ? wahl.value : null);
+      app.querySelector('#name-hinweis').textContent = '';
+      app.querySelector('#klasse-hinweis').textContent = '';
+      if (!r.kind) {
+        if (r.feld === 'klasse') { app.querySelector('#klasse-hinweis').textContent = r.grund; app.querySelector('input[name="klasse"]').focus(); }
+        else { app.querySelector('#name-hinweis').textContent = r.grund; feld.focus(); }
+        return;
+      }
       if (!r.ok) melden(SPEICHER_FEHLT);
       ansichtStart();
     });
@@ -97,6 +109,7 @@
     const mehrere = S.kinder().length > 1;
     zeigen(`
       ${kopf(`Hallo, ${esc(k.name)}!`, 'Ich bin Tupfi. Was möchtest du heute üben?')}
+      <p class="klasse-zeile hof">Klasse ${k.klasse}</p>
       ${S.istVorschau ? `<p class="einleitung hof">Vorschau: ${Object.keys(k.schwarm).length} sichere Aufgaben.</p>` : ''}
       ${heuteKarte()}
       <section class="bereiche-block" aria-labelledby="h-bereiche">
@@ -312,12 +325,22 @@
           <div class="zeit-heute"><dt>Heute zusammen</dt><dd>${T.zeitText(S.heuteSek(k))}</dd></div>
         </dl>
       </section>
+      <section class="fenster tauchbuch" aria-labelledby="h-klasse">
+        <h2 id="h-klasse">Meine Klasse</h2>
+        <p>Du übst die Aufgaben von Klasse ${k.klasse}.</p>
+        <p><button type="button" class="knopf leise-knopf" data-aktion="klasse-frage"${S.istVorschau ? ' disabled' : ''}>Ich bin jetzt in Klasse ${andereKlasse(k)}</button></p>
+      </section>
       <section class="fenster tauchbuch" aria-labelledby="h-neu-anfangen">
         <h2 id="h-neu-anfangen">Neu anfangen</h2>
         <p class="leise">Löscht deinen Schwarm, deine Stempel, deine Lernzeit und deinen Lernstand auf diesem Gerät. Die anderen Kinder bleiben.</p>
         <p><button type="button" class="knopf leise-knopf" data-aktion="loeschen-frage"${S.istVorschau ? ' disabled' : ''}>Alles löschen / Neu anfangen</button></p>
         ${S.istVorschau ? '<p class="leise">In der Vorschau wird nichts gelöscht.</p>' : ''}
       </section>
+      <dialog class="dialog" id="klasse-dialog" aria-labelledby="kd-titel" aria-describedby="kd-text">
+        <h2 id="kd-titel">Bist du jetzt in Klasse ${andereKlasse(k)}?</h2>
+        <p id="kd-text">Dann bekommst du die Aufgaben von Klasse ${andereKlasse(k)}. Dein Schwarm, deine Stempel und dein Lernstand bleiben.</p>
+        <p class="knopfreihe"><button type="button" class="knopf haupt" data-aktion="klasse-nein" autofocus>Nein, Klasse ${k.klasse} bleibt</button><button type="button" class="knopf leise-knopf" data-aktion="klasse-ja" data-klasse="${andereKlasse(k)}">Ja, Klasse ${andereKlasse(k)}</button></p>
+      </dialog>
       <dialog class="dialog" id="loeschen-dialog" aria-labelledby="ld-titel" aria-describedby="ld-text">
         <h2 id="ld-titel">Wirklich alles löschen?</h2>
         <p id="ld-text">Alles von ${esc(k.name)} wird gelöscht: Schwarm, Stempel, Lernzeit und Lernstand. Das geht nicht rückgängig. Die anderen Kinder auf diesem Gerät bleiben.</p>
@@ -325,6 +348,29 @@
       </dialog>`, 'Mein Tauchbuch');
     /* Escape schließt wie "Nein, behalten" (mit Fokus zurück) */
     app.querySelector('#loeschen-dialog').addEventListener('cancel', e => { e.preventDefault(); loeschenNein(); });
+    app.querySelector('#klasse-dialog').addEventListener('cancel', e => { e.preventDefault(); dialogZu('klasse-dialog', 'klasse-frage'); });
+  }
+  const andereKlasse = k => ZS.config.klassen.find(n => n !== k.klasse);
+
+  /* Dialog zu, Fokus zurück auf den Knopf, der ihn geöffnet hat */
+  function dialogZu(id, aktion) {
+    const d = app.querySelector('#' + id);
+    if (d && d.open) d.close();
+    const b = app.querySelector(`[data-aktion="${aktion}"]`);
+    if (b) b.focus();
+  }
+  function dialogAuf(id) {
+    const d = app.querySelector('#' + id);
+    if (d && typeof d.showModal === 'function') d.showModal();
+  }
+  function klasseJa(n) {
+    const d = app.querySelector('#klasse-dialog');
+    if (d && d.open) d.close();
+    const ok = S.klasseSetzen(n);
+    ansichtTauchbuch();
+    const b = app.querySelector('[data-aktion="klasse-frage"]');
+    if (b) b.focus();
+    melden(ok ? `Du bist jetzt in Klasse ${n}.` : SPEICHER_FEHLT);
   }
 
   /* Dialog zu, Fokus zurück auf den Knopf, der ihn geöffnet hat */
@@ -354,7 +400,7 @@
       <details class="fenster erwachsene">
         <summary><h2 id="h-erw">Für Lehrkräfte und Eltern</h2></summary>
         <div class="erwachsene__inhalt">
-          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000.</p>
+          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000. Beim Anlegen wählt jedes Kind seine Klasse. Die Aufgaben für Klasse 4 kommen nach und nach dazu. Ändern lässt sich die Klasse im Tauchbuch.</p>
 
           <h3>So ist das Üben gedacht</h3>
           <p>Jede Aufgabe hat ihren eigenen Lernstand. Was ein Kind noch nicht sicher kann, kommt öfter und auch an späteren Tagen wieder. Was es sicher kann, kommt seltener. Als sicher gilt eine Aufgabe erst, wenn das Kind sie an mehreren Tagen zügig und ohne Tipp gelöst hat. Bei Plus und Minus zählt der Lernstand je Aufgabenart, zum Beispiel „Einer mit Übergang“.</p>
@@ -386,7 +432,7 @@
           </ul>
 
           <h3>Daten</h3>
-          <p>Es gibt kein Konto und keine Anmeldung. Gespeichert werden nur der Vorname, der Lernstand, der Schwarm, die Stempel und die Lernzeit, und zwar nur in diesem Browser auf diesem Gerät. Nichts wird an einen Server geschickt. Im Tauchbuch kann ein Kind seinen Stand ganz löschen. Mehr steht unter <a href="datenschutz.html">Datenschutz</a>.</p>
+          <p>Es gibt kein Konto und keine Anmeldung. Gespeichert werden nur der Vorname, die Klasse, der Lernstand, der Schwarm, die Stempel und die Lernzeit, und zwar nur in diesem Browser auf diesem Gerät. Nichts wird an einen Server geschickt. Im Tauchbuch kann ein Kind seinen Stand ganz löschen. Mehr steht unter <a href="datenschutz.html">Datenschutz</a>.</p>
         </div>
       </details>`;
   }
@@ -420,6 +466,9 @@
     else if (a === 'start') ansichtStart();
     else if (a === 'tauchbuch') ansichtTauchbuch();
     else if (a === 'gefuehl') { S.gefuehlMerken(b.dataset.key, b.dataset.wert); ansichtTauchbuch(); melden('Danke! Das steht jetzt in deinem Tauchbuch.'); }
+    else if (a === 'klasse-frage') dialogAuf('klasse-dialog');
+    else if (a === 'klasse-nein') dialogZu('klasse-dialog', 'klasse-frage');
+    else if (a === 'klasse-ja') klasseJa(Number(b.dataset.klasse));
     else if (a === 'loeschen-frage') loeschenFragen();
     else if (a === 'loeschen-nein') loeschenNein();
     else if (a === 'loeschen-ja') loeschenJa();

@@ -12,10 +12,12 @@
   const istObjekt = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 
   /* Ein Kind. Die Felder für Aufgaben, Stempel usw. werden ab Etappe 2 gefüllt. */
-  const leeresKind = name => ({ id: neueId(), name, angelegt: Date.now(), aufgaben: {}, stempel: {}, zeit: {}, schwarm: {} });
+  const klasseOk = n => C.klassen.includes(Number(n)) ? Number(n) : C.klasseStandard;
+  const leeresKind = (name, klasse = C.klasseStandard) => ({ id: neueId(), name, klasse: klasseOk(klasse), angelegt: Date.now(), aufgaben: {}, stempel: {}, zeit: {}, schwarm: {} });
   const normalisiere = k => ({
     id: String(k.id),
     name: String(k.name).trim().slice(0, C.nameMaxLaenge),
+    klasse: klasseOk(k.klasse),
     angelegt: Number(k.angelegt) || Date.now(),
     aufgaben: istObjekt(k.aufgaben) ? k.aufgaben : {},
     stempel: istObjekt(k.stempel) ? k.stempel : {},
@@ -35,9 +37,11 @@
   /* ---------- Vorschau ---------- */
   const vorschauWert = new URLSearchParams(location.search).get('vorschau');
   const istVorschau = vorschauWert !== null && /^\d{1,3}$/.test(vorschauWert);
+  /* ?vorschau=N&klasse=4 zeigt den Stand eines Kindes aus Klasse 4 */
+  const vorschauKlasse = new URLSearchParams(location.search).get('klasse');
 
   function vorschauKind(n) {
-    const k = leeresKind('Vorschau');
+    const k = leeresKind('Vorschau', vorschauKlasse);
     k.id = 'vorschau';
     const { min, max } = C.faktoren;
     let zaehler = 0;
@@ -109,11 +113,12 @@
     return null;
   }
 
-  function anlegen(name) {
+  function anlegen(name, klasse) {
     if (istVorschau) return { ok: false, grund: 'In der Vorschau kann man keine Kinder anlegen.' };
     const grund = namePruefen(name);
-    if (grund) return { ok: false, grund };
-    const k = leeresKind(String(name).trim());
+    if (grund) return { ok: false, grund, feld: 'name' };
+    if (!C.klassen.includes(Number(klasse))) return { ok: false, grund: 'Tippe bitte auf deine Klasse.', feld: 'klasse' };
+    const k = leeresKind(String(name).trim(), klasse);
     kinder.push(k);
     waehlen(k.id);
     return { ok: speichern(), kind: k };
@@ -179,6 +184,14 @@
     return speichern();
   }
 
+  /* Klasse wechseln (nur im Tauchbuch). Lernstand, Fische und Stempel bleiben. */
+  function klasseSetzen(n) {
+    const k = aktiv();
+    if (!k || istVorschau || !C.klassen.includes(Number(n))) return false;
+    k.klasse = Number(n);
+    return speichern();
+  }
+
   /* Löscht nur das aktive Kind. In der Vorschau wird nichts gelöscht. */
   function aktivLoeschen() {
     const k = aktiv();
@@ -209,6 +222,7 @@
     zeitMerken,
     heuteSek,
     gefuehlMerken,
+    klasseSetzen,
     aktivLoeschen
   };
 })();

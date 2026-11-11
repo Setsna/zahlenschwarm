@@ -20,6 +20,9 @@ ZS.config = {
     werSchluessel: 'zahlenschwarm-wer' /* sessionStorage: welches Kind in diesem Tab übt */
   },
   nameMaxLaenge: 20,
+  /* Klassen, die ein Kind beim Anlegen wählt (Etappe 7a). Fehlt die Angabe bei einem alten Stand, gilt Klasse 3. */
+  klassen: [3, 4],
+  klasseStandard: 3,
 
   /* Versionsnummer der Bilder, getrennt von ?v=N für js und css. */
   bildStand: 3,

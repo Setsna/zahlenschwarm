@@ -402,3 +402,13 @@ dialog .knopfreihe { margin-top: var(--abstand); }
 .tupfen-legende .rt { display: inline-block; width: .85em; border-color: var(--navy); }
 .tupfen-legende .rt--sicher { border-color: var(--fisch-mal-rand); }
 .tupfen-legende .rt--uebt { background: linear-gradient(90deg, var(--navy) 50%, transparent 50%); }
+/* Klassenwahl beim Anlegen (Etappe 7a): zwei große Wahlknöpfe, echte Radio-Knöpfe darunter */
+.klassenwahl { border: 0; margin: 0; padding: 0; min-width: 0; width: 100%; display: grid; gap: calc(14 * var(--s)); }
+.klassenwahl legend { padding: 0; margin-bottom: calc(14 * var(--s)); font-weight: 700; }
+.klassen-knoepfe { display: flex; flex-wrap: wrap; gap: calc(20 * var(--s)); justify-content: center; }
+.klasse-wahl { position: relative; flex: 1 1 0; min-width: 120px; }
+.klasse-wahl input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.klasse-wahl span { display: flex; align-items: center; justify-content: center; min-height: 64px; padding: .4em 1em; border-radius: 16px; border: 3px solid var(--navy); background: var(--weiss); color: var(--navy); font-family: var(--sans); font-weight: 700; font-size: max(19px, calc(30 * var(--s))); }
+.klasse-wahl input:checked + span { background: var(--tupfi); box-shadow: inset 0 0 0 3px var(--navy); }
+.klasse-wahl input:focus-visible + span { outline: 3px solid var(--navy); outline-offset: 2px; box-shadow: 0 0 0 7px var(--weiss); }
+.klasse-zeile { margin-top: calc(-12 * var(--s)); text-align: center; color: var(--navy); font-size: var(--klein); }
