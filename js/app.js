@@ -140,13 +140,11 @@
     stufengeteilt: { name: 'Geteilt mit Stufenzahlen', zurueck: 'geteilt', beispiel: '120 : 4, 1\u202F200 : 4, 12\u202F000 : 4, 1\u202F200 : 40' }
   };
   const klasse4 = () => S.aktiv() && S.aktiv().klasse >= 4;
+  /* Kennzeichen auf jeder Klasse-4-Kachel (statt einer eigenen Überschrift, Design-Review Klasse 4) */
+  const KLASSE4_MARKE = '<span class="marke-k4">Klasse 4</span>';
   function stufenKachel(art) {
     const st = ARTEN[art].stufen;
-    if (!klasse4()) return '';
-    return `<section class="bereiche-block stufen-block" aria-labelledby="h-stufen">
-        <h2 id="h-stufen" class="abschnitt hof">Klasse 4</h2>
-        <button type="button" class="fenster bereich stufen" data-aktion="stufen" data-art="${st}"><span class="bereich__titel">Mit Stufenzahlen</span><span class="bereich__text">${STUFEN[st].beispiel}</span>${reihenTupfen(null, st, ZS.aufgaben.formate(st))}</button>
-      </section>`;
+    return `<button type="button" class="fenster bereich gemischt stufen" data-aktion="stufen" data-art="${st}">${KLASSE4_MARKE}<span class="bereich__titel">Mit Stufenzahlen</span><span class="bereich__text">${STUFEN[st].beispiel}</span>${reihenTupfen(null, st, ZS.aufgaben.formate(st))}</button>`;
   }
   const reiheVon = (r, art) => ZS.aufgaben.reihe(r, art);
   /* Begonnene Reihen: mindestens eine Aufgabe schon geübt */
@@ -176,9 +174,8 @@
       <section class="bereiche-block" aria-label="Reihen">
         <ul class="bereiche reihen">${kacheln}</ul>
         ${TUPFEN_LEGENDE}
-        ${gemischt}
+        ${klasse4() ? `<div class="kachel-paar">${gemischt}${stufenKachel(art)}</div>` : gemischt}
       </section>
-      ${stufenKachel(art)}
 `, A_.titel);
   }
 
@@ -199,13 +196,10 @@
       ${kopf('Plus und Minus', `Rechnen im Kopf bis ${klasse4() ? '1\u202F000\u202F000' : '1000'}. Was übst du heute?`, false)}
       <section class="bereiche-block" aria-label="Plus und Minus">
         <ul class="bereiche zwei">${kacheln}</ul>
+        ${klasse4() ? `<ul class="bereiche zwei">${ZS.aufgaben.GROSS_ARTEN.map(st => `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="stufen" data-art="${st}">${KLASSE4_MARKE}<span class="reihe__zahl">${st === 'plusgross' ? '+' : ZS.aufgaben.MINUS}</span><span class="bereich__text">${STUFEN[st].name}</span>${reihenTupfen(null, st, ZS.aufgaben.formate(st))}</button></li>`).join('')}</ul>` : ''}
         ${TUPFEN_LEGENDE}
         ${gemischt}
       </section>
-      ${klasse4() ? `<section class="bereiche-block stufen-block" aria-labelledby="h-gross">
-        <h2 id="h-gross" class="abschnitt hof">Klasse 4: bis 1\u202F000\u202F000</h2>
-        <ul class="bereiche zwei">${ZS.aufgaben.GROSS_ARTEN.map(st => `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="stufen" data-art="${st}"><span class="reihe__zahl">${st === 'plusgross' ? '+' : ZS.aufgaben.MINUS}</span><span class="bereich__text">${STUFEN[st].name}</span>${reihenTupfen(null, st, ZS.aufgaben.formate(st))}</button></li>`).join('')}</ul>
-      </section>` : ''}
 `, 'Plus und Minus');
   }
 
