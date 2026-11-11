@@ -474,6 +474,7 @@
       t2 = `Denk an ${ab} ${GETEILT} ${b} = ${a}.`;
       t3 = `${fz(t.c)} ${GETEILT} ${t.d} ist so viel wie ${fz(t.c / 10)} ${GETEILT} ${b}.`;
     } else {
+      t1 = 'Welche Aufgabe aus dem kleinen Einmaleins hilft dir hier?';   /* Ingo, 11.11.2026 */
       t2 = `Rechne erst ${ab} ${GETEILT} ${b}.`;
       t3 = `${fz(t.c)} sind ${ab} ${STUFE_WORT[f]}. Teile die ${STUFE_WORT[f]} durch ${b}.`;
     }
