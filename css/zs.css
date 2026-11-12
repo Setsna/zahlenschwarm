@@ -421,3 +421,7 @@ dialog .knopfreihe { margin-top: var(--abstand); }
 /* Lange Aufgaben (Klasse 4, z. B. 360 000 + 640 000 = 1 000 000): --laenge = Zeichen der gelösten Aufgabe, Schrift wird kleiner */
 /* Klasse 4: Lücken-Aufgabe "3 600 + ? = 10 000", Eingabe in der Mitte (Etappe 7c) */
 .aufgabe .aufgabe__text + .eingabe + .aufgabe__text { margin-left: .2em; }
+
+/* Kein Doppeltipp-Zoom in Safari (Kinder tippen Knöpfe schnell hintereinander, Safari zoomte dann).
+   Zoomen mit zwei Fingern bleibt möglich. Flächen zum Ziehen oder Malen behalten ihr eigenes touch-action. (12.11.2026) */
+html, body, button, a, input, label, summary, select, textarea { touch-action: manipulation; }
