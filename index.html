@@ -4,10 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <!-- Content Security Policy: Der Browser fuehrt nur Skripte aus den
-       eigenen Dateien aus und laedt nichts von fremden Adressen.
-       Eingeschleuster Code (Inline-Skripte, Ereignis-Attribute, fremde
-       Adressen) wird blockiert. Neue fremde Adresse = hier eintragen. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'">
+       eigenen Dateien aus. Einzige Ausnahme ist Firebase fuer das
+       gemeinsame Konto: die Skripte von www.gstatic.com (unten, mit
+       Pruefsumme) und Verbindungen zu *.googleapis.com.
+       Eingeschleuster Code (Inline-Skripte, Ereignis-Attribute, andere
+       fremde Adressen) wird blockiert. Neue fremde Adresse = hier eintragen.
+       datenschutz.html und impressum.html bleiben ohne diese Ausnahme. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; manifest-src 'self'; connect-src 'self' https://*.googleapis.com; base-uri 'none'; form-action 'self'; object-src 'none'">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#0e2f45">
   <title>Zahlenschwarm</title>
@@ -21,9 +24,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="preload" href="schriften/libre-caslon-text.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="schriften/andika-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="schriften/schriften.css?v=26">
-  <link rel="stylesheet" href="css/tokens.css?v=26">
-  <link rel="stylesheet" href="css/zs.css?v=26">
+  <link rel="stylesheet" href="schriften/schriften.css?v=29">
+  <link rel="stylesheet" href="css/tokens.css?v=29">
+  <link rel="stylesheet" href="css/zs.css?v=29">
 </head>
 <body>
   <!-- Gemalter Unterwassergrund, Lichtschacht und Randblasen: nur Schmuck -->
@@ -37,12 +40,20 @@
   <div class="meldung-bereich"><p id="meldung" class="meldung" role="status"></p></div>
   <div id="live" class="nurvorlesen" aria-live="polite" aria-atomic="true"></div>
   <footer class="fuss"><a href="impressum.html">Impressum</a> <a href="datenschutz.html">Datenschutz</a></footer>
-  <script src="js/config.js?v=26"></script>
-  <script src="js/lernstand.js?v=26"></script>
-  <script src="js/speicher.js?v=26"></script>
-  <script src="js/aufgaben.js?v=26"></script>
-  <script src="js/tauchbuch.js?v=26"></script>
-  <script src="js/ueben.js?v=26"></script>
-  <script src="js/app.js?v=26"></script>
+  <script src="js/config.js?v=29"></script>
+  <script src="js/lernstand.js?v=29"></script>
+  <script src="js/speicher.js?v=29"></script>
+  <script src="js/aufgaben.js?v=29"></script>
+  <script src="js/tauchbuch.js?v=29"></script>
+  <script src="js/ueben.js?v=29"></script>
+  <script src="js/mische.js?v=29"></script>
+  <script src="js/cloud.js?v=29"></script>
+  <script src="js/app.js?v=29"></script>
+  <!-- Firebase fuer das gemeinsame Konto: dieselbe Version und dieselben Pruefsummen wie im Perlentaucher.
+       Steht bewusst hinter den eigenen Skripten: Die Seite ist schon da, auch wenn Firebase langsam
+       oder gar nicht laedt. Dann geht es mit dem Stand auf dem Geraet weiter. -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js" integrity="sha384-Ke0FJhH7LyRqDxZ0wt+/OXV38yfQVu7g9VPEEGjYmB4RVOY/ta04uecRhsMwT7V3" crossorigin="anonymous"></script>
 </body>
 </html>

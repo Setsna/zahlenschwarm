@@ -1,4 +1,4 @@
-/* Zahlenschwarm: Ansichten und Bedienung (Stand Etappe 1). */
+/* Zahlenschwarm: Ansichten und Bedienung. */
 (() => {
   'use strict';
   const S = ZS.speicher;
@@ -39,16 +39,71 @@
       </header>`;
   }
 
-  function ansichtNeu() {
-    const andere = S.kinder().length > 0;
+  const UNLESBAR = 'Dein gespeicherter Stand konnte nicht gelesen werden. Damit nichts verloren geht, bleibt er unverändert. Bitte sag deiner Lehrkraft Bescheid.';
+  const TUPFI_GRUSS = 'Ich bin Tupfi. Mit mir übst du das Einmaleins und das Rechnen im Kopf. In deinem Tempo.';
+  const MOMENT = 'Einen Moment …';
+  /* Welche Ansicht gerade zu sehen ist. Nur auf "code" und "start" darf eine Antwort aus dem Netz
+     die Ansicht von selbst wechseln, sonst würde sie das Kind beim Üben stören. */
+  let ansicht = '';
+
+  /* ---------- Anmelden mit dem Code (Konto-Umbau, Etappe 2c) ---------- */
+  /* Der QR-Aufkleber führt auf diese Seite mit #c=CODE am Ende, wie beim Perlentaucher. */
+  const ADRESSE = () => location.hash + location.search;
+  const codeAusAdresse = () => { const m = /[#&?]c=([A-Za-z0-9]{8})(?![A-Za-z0-9])/.exec(ADRESSE()); return m ? m[1].toUpperCase() : null; };
+  const scanSpur = () => /[#&?]c=/.test(ADRESSE());
+  /* Den Code aus der Adresszeile nehmen, damit er nicht im Verlauf oder auf einem Bildschirmfoto bleibt */
+  function adresseSaeubern() {
+    try { if (scanSpur()) history.replaceState(null, '', location.pathname); } catch (e) { /* dann bleibt er stehen */ }
+  }
+
+  /* Ergebnis von ZS.cloud.anmelden() oder start() anzeigen */
+  function nachAnmelden(r) {
+    if (!r.ok) {
+      if (ansicht === 'code' && app.querySelector('#code')) {
+        app.querySelector('#code-form button[type="submit"]').disabled = false;
+        app.querySelector('#code-hinweis').textContent = r.grund || '';
+        app.querySelector('#code').focus();
+      } else ansichtCode(r.grund);
+      return;
+    }
+    if (r.brauchtKlasse) { ansichtKlasse(r.name); return; }
+    ansichtStart();
+    if (r.gespeichert === false) melden(SPEICHER_FEHLT);
+  }
+
+  function ansichtCode(hinweis = '') {
+    ansicht = 'code';
     zeigen(`
-      ${kopf(andere ? 'Neues Kind' : 'Willkommen!', 'Ich bin Tupfi. Mit mir übst du das Einmaleins und das Rechnen im Kopf. In deinem Tempo.')}
-      <section class="fenster mitte" aria-labelledby="h-neu">
-        <h2 id="h-neu">Wie heißt du?</h2>
-        <form id="neu-form" novalidate>
-          <label for="name">Dein Vorname</label>
-          <input type="text" id="name" name="name" autocomplete="off" autocapitalize="words" spellcheck="false" maxlength="${ZS.config.nameMaxLaenge}" aria-describedby="name-hinweis name-info">
-          <p id="name-hinweis" class="hinweis-feld" aria-live="polite"></p>
+      ${kopf('Willkommen!', TUPFI_GRUSS)}
+      <section class="fenster mitte" aria-labelledby="h-code">
+        <h2 id="h-code">Wie lautet dein Code?</h2>
+        <form id="code-form" novalidate>
+          <label for="code">Dein Code</label>
+          <input type="text" id="code" name="code" class="code-feld" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="${ZS.config.speicher.codeLaenge + 4}" aria-describedby="code-hinweis code-info">
+          <p id="code-hinweis" class="hinweis-feld" aria-live="polite">${esc(hinweis || '')}</p>
+          <p class="knopfreihe"><button type="submit" class="knopf haupt">Weiter</button></p>
+        </form>
+        <p id="code-info" class="leise">Dein Code hat ${ZS.config.speicher.codeLaenge} Zeichen: Buchstaben und Zahlen.</p>
+      </section>
+      ${erwachsene()}`, '');
+    app.querySelector('#code-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const knopf = e.target.querySelector('button[type="submit"]');
+      if (knopf.disabled) return;
+      knopf.disabled = true;
+      app.querySelector('#code-hinweis').textContent = MOMENT;
+      ZS.cloud.anmelden(app.querySelector('#code').value).then(nachAnmelden, () => nachAnmelden({ ok: false, grund: ZS.cloud.TEXT.sonst }));
+    });
+  }
+
+  /* Erstes Anmelden überhaupt: Der Name kommt aus dem Konto, die Klasse wählt das Kind. */
+  function ansichtKlasse(name) {
+    ansicht = 'klasse';
+    zeigen(`
+      ${kopf(`Hallo, ${esc(name)}!`, TUPFI_GRUSS)}
+      <section class="fenster mitte" aria-labelledby="h-klasse-wahl">
+        <h2 id="h-klasse-wahl">Schön, dass du da bist!</h2>
+        <form id="klasse-form" novalidate>
           <fieldset class="klassenwahl" aria-describedby="klasse-hinweis">
             <legend>In welche Klasse gehst du?</legend>
             <div class="klassen-knoepfe">${ZS.config.klassen.map(n => `<label class="klasse-wahl"><input type="radio" name="klasse" value="${n}"><span>Klasse ${n}</span></label>`).join('')}</div>
@@ -56,39 +111,34 @@
           </fieldset>
           <p class="knopfreihe">
             <button type="submit" class="knopf haupt">Los geht's</button>
-            ${andere ? '<button type="button" class="knopf leise-knopf" data-aktion="wer">Zurück</button>' : ''}
+            <button type="button" class="knopf leise-knopf" data-aktion="abmelden">Zurück</button>
           </p>
         </form>
-        <p id="name-info" class="leise">Dein Name bleibt nur auf diesem Gerät.</p>
-      </section>
-      ${andere ? '' : erwachsene()}`, andere ? 'Neues Kind' : '');
-    app.querySelector('#neu-form').addEventListener('submit', e => {
+      </section>`, `Hallo, ${name}`);
+    app.querySelector('#klasse-form').addEventListener('submit', e => {
       e.preventDefault();
-      const feld = app.querySelector('#name');
       const wahl = app.querySelector('input[name="klasse"]:checked');
-      const r = S.anlegen(feld.value, wahl ? wahl.value : null);
-      app.querySelector('#name-hinweis').textContent = '';
-      app.querySelector('#klasse-hinweis').textContent = '';
-      if (!r.kind) {
-        if (r.feld === 'klasse') { app.querySelector('#klasse-hinweis').textContent = r.grund; app.querySelector('input[name="klasse"]').focus(); }
-        else { app.querySelector('#name-hinweis').textContent = r.grund; feld.focus(); }
+      const r = ZS.cloud.klasseWaehlen(wahl ? wahl.value : null);
+      if (!r.ok) {
+        app.querySelector('#klasse-hinweis').textContent = r.grund;
+        app.querySelector('input[name="klasse"]').focus();
         return;
       }
-      if (!r.ok) melden(SPEICHER_FEHLT);
-      ansichtStart();
+      nachAnmelden(r);
     });
   }
 
-  function ansichtWer() {
-    const liste = S.kinder().map(k => `<li><button type="button" class="knopf" data-aktion="waehlen" data-id="${esc(k.id)}">${esc(k.name)}</button></li>`).join('');
-    zeigen(`
-      ${kopf('Wer übt heute?', 'Tippe auf deinen Namen.')}
-      <section class="fenster mitte" aria-label="Namen">
-        <ul class="kinder-liste">${liste}</ul>
-        <p><button type="button" class="knopf leise-knopf" data-aktion="neu">Ich bin neu hier</button></p>
-      </section>
-      ${erwachsene()}`, 'Wer übt heute?');
+  /* Zeile auf der Startseite, wenn der Stand gerade nicht in der Datenbank ankommt */
+  function netzText() {
+    const z = ZS.cloud.zustand().art;
+    if (z === 'lokal') return 'Gerade ohne Internet. Dein Stand bleibt auf diesem Gerät und wird später abgeglichen.';
+    if (z === 'fehler') return 'Dein Stand konnte gerade nicht im Internet gespeichert werden. Er bleibt auf diesem Gerät. Bitte sag deiner Lehrkraft Bescheid.';
+    return '';
   }
+  ZS.cloud.beiZustand(() => {
+    const p = app.querySelector('#netz-zeile');
+    if (p) { p.textContent = netzText(); p.hidden = !p.textContent; }
+  });
 
   /* Die drei Bereiche. "bald": noch nicht gebaut (Etappe 2 bis 4). */
   const BEREICHE = [
@@ -104,12 +154,13 @@
   }
 
   function ansichtStart() {
+    ansicht = 'start';
     S.nachtragen();
     const k = S.aktiv();
-    const mehrere = S.kinder().length > 1;
     zeigen(`
       ${kopf(`Hallo, ${esc(k.name)}!`, 'Ich bin Tupfi. Was möchtest du heute üben?')}
       <p class="klasse-zeile hof">Klasse ${k.klasse}</p>
+      <p id="netz-zeile" class="netz-zeile hof"${netzText() ? '' : ' hidden'}>${esc(netzText())}</p>
       ${S.istVorschau ? `<p class="einleitung hof">Vorschau: ${Object.keys(k.schwarm).length} sichere Aufgaben.</p>` : ''}
       ${heuteKarte()}
       <section class="bereiche-block" aria-labelledby="h-bereiche">
@@ -118,8 +169,7 @@
       </section>
       <p class="knopfreihe">
         <button type="button" class="knopf" data-aktion="tauchbuch">Mein Tauchbuch</button>
-        ${S.istVorschau ? '' : `${mehrere ? '<button type="button" class="knopf leise-knopf" data-aktion="wer">Kind wechseln</button>' : ''}
-        <button type="button" class="knopf leise-knopf" data-aktion="neu">Neues Kind anlegen</button>`}
+        ${S.istVorschau ? '' : '<button type="button" class="knopf leise-knopf" data-aktion="abmelden">Abmelden</button>'}
       </p>
       ${erwachsene()}`, `Hallo, ${k.name}`);
   }
@@ -159,6 +209,7 @@
   }
 
   function ansichtReihen(art = 'mal') {
+    ansicht = 'reihen';
     const A_ = ARTEN[art];
     const kacheln = OFFENE_REIHEN.map(r => {
       const [gross, klein] = A_.kachel(r);
@@ -188,6 +239,7 @@
   };
   const pmBegonnen = () => ['plus', 'minus'].filter(op => ZS.aufgaben.formate(op).some(a => ZS.lernstand.eintrag(S.aktiv(), a.id).box > 0));
   function ansichtPlusMinus() {
+    ansicht = 'plusminus';
     const kacheln = ['plus', 'minus'].map(op => `<li><button type="button" class="fenster bereich reihe reihe--offen" data-aktion="pm" data-op="${op}"><span class="reihe__zahl">${PM[op].zeichen}</span><span class="bereich__text">${PM[op].name}</span>${reihenTupfen(null, op, ZS.aufgaben.formate(op))}</button></li>`).join('');
     const begonnen = pmBegonnen();
     const gemischt = begonnen.length
@@ -212,6 +264,7 @@
   function rundeStarten(kandidaten, zurueck, titel = '') {
     const neuInReihenfolge = kandidaten.some(a => a.platzhalter);
     melden('');
+    ansicht = 'ueben';
     ZS.ueben.starte({
       waehler: verlauf => ZS.aufgaben.konkret(ZS.lernstand.naechste({ kandidaten, kind: S.aktiv(), verlauf, neuInReihenfolge }).aufgabe, Math.random, S.aktiv()),
       fertig: (ergebnisse, abgebrochen, neu = {}) => {
@@ -304,6 +357,7 @@
   }
 
   function ansichtTauchbuch() {
+    ansicht = 'tauchbuch';
     S.nachtragen();
     const k = S.aktiv(), T = ZS.tauchbuch;
     const fische = T.fische(k);
@@ -350,24 +404,12 @@
         <p>Du übst die Aufgaben von Klasse ${k.klasse}.</p>
         <p><button type="button" class="knopf leise-knopf" data-aktion="klasse-frage"${S.istVorschau ? ' disabled' : ''}>Ich bin jetzt in Klasse ${andereKlasse(k)}</button></p>
       </section>
-      <section class="fenster tauchbuch" aria-labelledby="h-neu-anfangen">
-        <h2 id="h-neu-anfangen">Neu anfangen</h2>
-        <p class="leise">Löscht deinen Schwarm, deine Stempel, deine Lernzeit und deinen Lernstand auf diesem Gerät. Die anderen Kinder bleiben.</p>
-        <p><button type="button" class="knopf leise-knopf" data-aktion="loeschen-frage"${S.istVorschau ? ' disabled' : ''}>Alles löschen / Neu anfangen</button></p>
-        ${S.istVorschau ? '<p class="leise">In der Vorschau wird nichts gelöscht.</p>' : ''}
-      </section>
       <dialog class="dialog" id="klasse-dialog" aria-labelledby="kd-titel" aria-describedby="kd-text">
         <h2 id="kd-titel">Bist du jetzt in Klasse ${andereKlasse(k)}?</h2>
         <p id="kd-text">Dann bekommst du die Aufgaben von Klasse ${andereKlasse(k)}. Dein Schwarm, deine Stempel und dein Lernstand bleiben.</p>
         <p class="knopfreihe"><button type="button" class="knopf haupt" data-aktion="klasse-nein" autofocus>Nein, Klasse ${k.klasse} bleibt</button><button type="button" class="knopf leise-knopf" data-aktion="klasse-ja" data-klasse="${andereKlasse(k)}">Ja, Klasse ${andereKlasse(k)}</button></p>
-      </dialog>
-      <dialog class="dialog" id="loeschen-dialog" aria-labelledby="ld-titel" aria-describedby="ld-text">
-        <h2 id="ld-titel">Wirklich alles löschen?</h2>
-        <p id="ld-text">Alles von ${esc(k.name)} wird gelöscht: Schwarm, Stempel, Lernzeit und Lernstand. Das geht nicht rückgängig. Die anderen Kinder auf diesem Gerät bleiben.</p>
-        <p class="knopfreihe"><button type="button" class="knopf haupt" data-aktion="loeschen-nein" autofocus>Nein, behalten</button><button type="button" class="knopf leise-knopf" data-aktion="loeschen-ja">Ja, alles löschen</button></p>
       </dialog>`, 'Mein Tauchbuch');
-    /* Escape schließt wie "Nein, behalten" (mit Fokus zurück) */
-    app.querySelector('#loeschen-dialog').addEventListener('cancel', e => { e.preventDefault(); loeschenNein(); });
+    /* Escape schließt wie "Nein" (mit Fokus zurück) */
     app.querySelector('#klasse-dialog').addEventListener('cancel', e => { e.preventDefault(); dialogZu('klasse-dialog', 'klasse-frage'); });
   }
   const andereKlasse = k => ZS.config.klassen.find(n => n !== k.klasse);
@@ -391,27 +433,6 @@
     const b = app.querySelector('[data-aktion="klasse-frage"]');
     if (b) b.focus();
     melden(ok ? `Du bist jetzt in Klasse ${n}.` : SPEICHER_FEHLT);
-  }
-
-  /* Dialog zu, Fokus zurück auf den Knopf, der ihn geöffnet hat */
-  function loeschenNein() {
-    const d = app.querySelector('#loeschen-dialog');
-    if (d && d.open) d.close();
-    const b = app.querySelector('[data-aktion="loeschen-frage"]');
-    if (b) b.focus();
-  }
-
-  function loeschenFragen() {
-    const d = app.querySelector('#loeschen-dialog');
-    if (d && typeof d.showModal === 'function') d.showModal();
-  }
-  function loeschenJa() {
-    const name = S.aktiv() ? S.aktiv().name : '';
-    const d = app.querySelector('#loeschen-dialog');
-    if (d && d.open) d.close();
-    const ok = S.aktivLoeschen();
-    S.kinder().length ? ansichtWer() : ansichtNeu();
-    melden(ok ? `Alles von ${name} ist gelöscht.` : SPEICHER_FEHLT);
   }
 
   /* ---------- Für Lehrkräfte und Eltern (aufklappbar, am Ende jeder Startansicht) ---------- */
@@ -458,10 +479,9 @@
   }
 
   function anzeigen() {
-    if (S.ladeFehler) melden('Dein gespeicherter Stand konnte nicht gelesen werden. Damit nichts verloren geht, speichert die Seite gerade nichts. Bitte sag deiner Lehrkraft Bescheid.');
+    if (S.ladeFehler) melden(UNLESBAR);
     if (S.aktiv()) ansichtStart();
-    else if (S.kinder().length) ansichtWer();
-    else ansichtNeu();
+    else ansichtCode();
   }
 
   /* ---------- Klicks ---------- */
@@ -469,9 +489,7 @@
     const b = e.target.closest('[data-aktion]');
     if (!b || b.disabled) return;
     const a = b.dataset.aktion;
-    if (a === 'waehlen') { S.waehlen(b.dataset.id); ansichtStart(); }
-    else if (a === 'wer') { S.abmelden(); S.kinder().length ? ansichtWer() : ansichtNeu(); }
-    else if (a === 'neu') { S.abmelden(); ansichtNeu(); }
+    if (a === 'abmelden') { b.disabled = true; ZS.cloud.abmelden().then(() => { melden(''); ansichtCode(); }, () => { ansichtCode(); }); }
     else if (a === 'bereich' && ARTEN[b.dataset.id]) ansichtReihen(b.dataset.id);
     else if (a === 'reihe') { const art = b.dataset.art, r = Number(b.dataset.r); rundeStarten(reiheVon(r, art), () => ansichtReihen(art), reihenTitel(art, r)); }
     else if (a === 'gemischt') { const art = b.dataset.art; rundeStarten(begonneneReihen(art).flatMap(r => reiheVon(r, art)), () => ansichtReihen(art), art === 'geteilt' ? 'Geteilt gemischt' : 'Einmaleins gemischt'); }
@@ -491,9 +509,6 @@
     else if (a === 'klasse-frage') dialogAuf('klasse-dialog');
     else if (a === 'klasse-nein') dialogZu('klasse-dialog', 'klasse-frage');
     else if (a === 'klasse-ja') klasseJa(Number(b.dataset.klasse));
-    else if (a === 'loeschen-frage') loeschenFragen();
-    else if (a === 'loeschen-nein') loeschenNein();
-    else if (a === 'loeschen-ja') loeschenJa();
   });
 
   if (S.istVorschau) {
@@ -501,7 +516,36 @@
     h.hidden = false;
     h.textContent = 'Vorschau: Hier wird nichts gespeichert.';
   }
-  anzeigen();
+  /* ---------- Start ---------- */
+  /* Was das Gerät schon weiß, steht sofort da. Die Antwort aus dem Netz kommt nach. */
+  const darfWechseln = () => ['code', 'start'].includes(ansicht) && !document.body.classList.contains('uebt');
+  function starten() {
+    if (S.istVorschau) { anzeigen(); return; }
+    const qr = codeAusAdresse(), spur = scanSpur();
+    adresseSaeubern();
+    if (qr) {
+      /* Ein gescannter Code hat Vorrang vor dem Kind, das auf dem Gerät noch angemeldet ist. */
+      if (S.aktiv() && S.code() !== qr) S.abmelden();
+      if (S.aktiv()) ansichtStart(); else ansichtCode(MOMENT);
+      ZS.cloud.anmelden(qr).then(r => { if (darfWechseln()) { if (!r.ok) ansichtCode(r.grund); else nachAnmelden(r); } }, () => {});
+      return;
+    }
+    anzeigen();
+    if (spur && ansicht === 'code') app.querySelector('#code-hinweis').textContent = 'Der Code wurde nicht ganz gelesen. Tippe ihn bitte ein.';
+    const gemerkt = S.code();
+    ZS.cloud.start().then(r => {
+      if (r.ok) { if (darfWechseln()) nachAnmelden(r); return null; }
+      if (r.grund) return r;
+      /* Firebase kennt niemanden, der Tab aber schon: mit dem gemerkten Code anmelden */
+      return gemerkt && S.code() === gemerkt ? ZS.cloud.anmelden(gemerkt) : null;
+    }).then(r => {
+      if (!r) return;
+      if (r.ok) { if (ansicht === 'start' && darfWechseln()) ansichtStart(); return; }
+      /* Die Lehrkraft hat den Code gesperrt: nicht auf dem Gerät weiterüben lassen */
+      if (r.grund === ZS.cloud.TEXT.gesperrt && S.aktiv()) { S.abmelden(); if (darfWechseln()) ansichtCode(r.grund); }
+    }, () => {});
+  }
+  starten();
 
   ZS.app = { anzeigen, melden };
 })();

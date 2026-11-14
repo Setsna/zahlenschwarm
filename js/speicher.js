@@ -1,38 +1,54 @@
 /* Zahlenschwarm: Speicher im Browser.
-   - Alles bleibt in localStorage dieses Browsers, je Kind ein Eintrag.
-   - Welches Kind in diesem Tab übt, steht in sessionStorage.
+   - Je Code ein eigener Eintrag in localStorage: zahlenschwarm-v2.<code>.
+     So sieht auf einem geteilten Gerät kein Kind den Stand eines anderen.
+   - Mit welchem Code in diesem Tab geübt wird, steht in sessionStorage.
+   - zahlenschwarm-v2.<code>.abgleich hält den Stand, den dieses Gerät zuletzt mit der
+     Datenbank abgeglichen hat (js/cloud.js, js/mische.js). Er liegt nur auf dem Gerät.
+   - Der alte Stand zahlenschwarm-v1 (Liste aller Kinder) wird nicht gelesen und nicht verändert.
    - ?vorschau=N zeigt einen Beispielstand mit N sicheren Aufgaben und speichert nichts. */
 (() => {
   'use strict';
   const C = ZS.config;
-  const KEY = `${C.speicher.schluessel}-v${C.speicher.schema}`;
+  const BASIS = `${C.speicher.schluessel}-v${C.speicher.schema}`;
   const WER = C.speicher.werSchluessel;
+  const schluesselFuer = code => `${BASIS}.${code}`;
 
-  const neueId = () => 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const abgleichSchluessel = code => `${schluesselFuer(code)}.abgleich`;
+
+  /* Code wie beim Perlentaucher: feste Länge, nur die Zeichen aus config.js (ohne 0, 1, I, L, O).
+     Gibt den Code zurück oder null. */
+  function codePruefen(roh) {
+    const code = String(roh || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return code.length === C.speicher.codeLaenge && [...code].every(z => C.speicher.codeZeichen.includes(z)) ? code : null;
+  }
+
   const istObjekt = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 
-  /* Ein Kind. Die Felder für Aufgaben, Stempel usw. werden ab Etappe 2 gefüllt. */
+  /* Der Stand eines Kindes */
   const klasseOk = n => C.klassen.includes(Number(n)) ? Number(n) : C.klasseStandard;
-  const leeresKind = (name, klasse = C.klasseStandard) => ({ id: neueId(), name, klasse: klasseOk(klasse), angelegt: Date.now(), aufgaben: {}, stempel: {}, zeit: {}, schwarm: {} });
+  const leeresKind = (name, klasse = C.klasseStandard) => ({ name, klasse: klasseOk(klasse), angelegt: Date.now(), aufgaben: {}, stempel: {}, zeit: {}, schwarm: {}, geaendert: Date.now() });
   const normalisiere = k => ({
-    id: String(k.id),
     name: String(k.name).trim().slice(0, C.nameMaxLaenge),
     klasse: klasseOk(k.klasse),
     angelegt: Number(k.angelegt) || Date.now(),
     aufgaben: istObjekt(k.aufgaben) ? k.aufgaben : {},
     stempel: istObjekt(k.stempel) ? k.stempel : {},
     zeit: istObjekt(k.zeit) ? k.zeit : {},
-    schwarm: istObjekt(k.schwarm) ? k.schwarm : {}
+    schwarm: istObjekt(k.schwarm) ? k.schwarm : {},
+    geaendert: Number(k.geaendert) || Number(k.angelegt) || Date.now()
   });
-  const kindGueltig = k => istObjekt(k) && typeof k.id === 'string' && k.id && typeof k.name === 'string' && k.name.trim();
+  const kindGueltig = k => istObjekt(k) && typeof k.name === 'string' && k.name.trim();
 
-  let kinder = [];
-  let aktivId = null;
-  /* Konnte ein vorhandener Stand nicht gelesen werden, speichert die Seite nichts,
-     damit der alte Stand nicht überschrieben wird. */
+  let kind = null;
+  let aktivCode = null;
+  /* Konnte ein vorhandener Stand nicht gelesen werden, wird er nicht geöffnet
+     und nicht überschrieben. */
   let ladeFehler = false;
   let letzterFehler = null;
   let persistGefragt = false;
+  /* Zählt jede Änderung des Stands. Daran erkennt der Abgleich, ob währenddessen weitergeübt wurde. */
+  let fassung = 0;
+  const lauscher = [];
 
   /* ---------- Vorschau ---------- */
   const vorschauWert = new URLSearchParams(location.search).get('vorschau');
@@ -42,7 +58,6 @@
 
   function vorschauKind(n) {
     const k = leeresKind('Vorschau', vorschauKlasse);
-    k.id = 'vorschau';
     const { min, max } = C.faktoren;
     let zaehler = 0;
     for (const reihe of C.reihenFolge) {
@@ -55,44 +70,67 @@
     return k;
   }
 
-  /* ---------- Laden ---------- */
+  /* ---------- Lesen ---------- */
+  /* Liest den Stand zu einem Code. Ergebnis: { kind } (null = noch kein Stand) oder { fehler }. */
+  function lesen(code) {
+    let roh = null;
+    try { roh = localStorage.getItem(schluesselFuer(code)); } catch (e) { return { fehler: e }; }
+    if (roh === null) return { kind: null };
+    try {
+      const daten = JSON.parse(roh);
+      if (!kindGueltig(daten)) throw new Error('Aufbau unbekannt');
+      return { kind: normalisiere(daten) };
+    } catch (e) { return { fehler: e }; }
+  }
+
+  /* Gibt es auf diesem Gerät schon einen Stand zu dem Code (auch einen unlesbaren)? */
+  function vorhanden(roh) {
+    const code = codePruefen(roh);
+    if (!code || istVorschau) return false;
+    try { return localStorage.getItem(schluesselFuer(code)) !== null; } catch (e) { return false; }
+  }
+
+  function merkeWer(code) {
+    try { code ? sessionStorage.setItem(WER, code) : sessionStorage.removeItem(WER); } catch (e) { /* nur dieser Tab */ }
+  }
+
   function laden() {
     if (istVorschau) {
       const n = Math.min(Number(vorschauWert), (C.faktoren.max - C.faktoren.min + 1) * C.reihenFolge.length);
-      kinder = [vorschauKind(n)];
-      aktivId = 'vorschau';
-      return;
-    }
-    let roh = null;
-    try { roh = localStorage.getItem(KEY); } catch (e) { letzterFehler = e; return; }
-    if (roh === null) return;
-    try {
-      const daten = JSON.parse(roh);
-      if (!istObjekt(daten) || !Array.isArray(daten.kinder)) throw new Error('Aufbau unbekannt');
-      kinder = daten.kinder.filter(kindGueltig).map(normalisiere);
-    } catch (e) {
-      ladeFehler = true;
-      letzterFehler = e;
+      kind = vorschauKind(n);
+      aktivCode = 'VORSCHAU';
       return;
     }
     let gewaehlt = null;
-    try { gewaehlt = sessionStorage.getItem(WER); } catch (e) { /* dann fragt die Seite nach */ }
-    const k = kinder.length === 1 ? kinder[0] : kinder.find(x => x.id === gewaehlt);
-    if (k) aktivId = k.id;
+    try { gewaehlt = sessionStorage.getItem(WER); } catch (e) { /* dann fragt die Seite nach dem Code */ }
+    const code = codePruefen(gewaehlt);
+    if (!code) return;
+    const r = lesen(code);
+    if (r.fehler) { ladeFehler = true; letzterFehler = r.fehler; return; }
+    if (r.kind) { kind = r.kind; aktivCode = code; } else merkeWer(null);
   }
 
   /* ---------- Speichern ---------- */
   /* Gibt true zurück, wenn gespeichert wurde (oder in der Vorschau nichts zu tun ist). */
-  function speichern() {
-    if (istVorschau) return true;
-    if (ladeFehler) return false;
+  function ablegen() {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ schema: C.speicher.schema, kinder }));
+      localStorage.setItem(schluesselFuer(aktivCode), JSON.stringify({ schema: C.speicher.schema, ...kind }));
     } catch (e) {
       letzterFehler = e;
       return false;
     }
     letzterFehler = null;
+    return true;
+  }
+
+  function speichern() {
+    if (istVorschau) return true;
+    if (!kind || !aktivCode) return false;
+    kind.geaendert = Date.now();
+    fassung++;
+    if (!ablegen()) return false;
+    /* Das Cloud-Modul hört hier mit und schreibt nach einer kurzen Pause in die Datenbank. */
+    for (const f of lauscher.slice()) { try { f(); } catch (e) { /* Speichern auf dem Gerät hat geklappt */ } }
     if (!persistGefragt) {
       persistGefragt = true;
       /* Bittet den Browser, die Daten zu behalten. Ob er zustimmt, entscheidet er selbst. */
@@ -101,39 +139,51 @@
     return true;
   }
 
-  /* ---------- Kinder ---------- */
-  const gleicherName = (a, b) => a.trim().toLocaleLowerCase('de') === b.trim().toLocaleLowerCase('de');
-
+  /* ---------- Öffnen und Abmelden ---------- */
   /* Prüft einen Vornamen. Gibt null zurück, wenn er passt, sonst einen Hinweis für das Kind. */
-  function namePruefen(name, ausserId = null) {
+  function namePruefen(name) {
     const n = String(name || '').trim();
     if (!n) return 'Schreib bitte deinen Vornamen.';
     if (n.length > C.nameMaxLaenge) return `Der Name ist zu lang. Höchstens ${C.nameMaxLaenge} Zeichen.`;
-    if (kinder.some(k => k.id !== ausserId && gleicherName(k.name, n))) return 'Diesen Namen gibt es hier schon. Nimm zum Beispiel noch den ersten Buchstaben vom Nachnamen dazu.';
     return null;
   }
 
-  function anlegen(name, klasse) {
-    if (istVorschau) return { ok: false, grund: 'In der Vorschau kann man keine Kinder anlegen.' };
-    const grund = namePruefen(name);
-    if (grund) return { ok: false, grund, feld: 'name' };
-    if (!C.klassen.includes(Number(klasse))) return { ok: false, grund: 'Tippe bitte auf deine Klasse.', feld: 'klasse' };
-    const k = leeresKind(String(name).trim(), klasse);
-    kinder.push(k);
-    waehlen(k.id);
-    return { ok: speichern(), kind: k };
+  /* Öffnet den Stand zu einem Code.
+     - Gibt es ihn schon, wird er geladen. Ein mitgegebener Name ersetzt den gespeicherten
+       (ab der Anmeldung kommt der Name aus dem Konto).
+     - Gibt es ihn noch nicht, wird er mit Name und Klasse neu angelegt.
+     Ergebnis: { ok, kind, neu } oder { ok: false, grund, feld }. ok = false mit kind heißt:
+     geöffnet, aber das Speichern hat nicht geklappt. */
+  function oeffnen(roh, konto = {}) {
+    if (istVorschau) return { ok: false, grund: 'In der Vorschau kann man sich nicht anmelden.' };
+    const code = codePruefen(roh);
+    if (!code) return { ok: false, grund: `Dein Code hat ${C.speicher.codeLaenge} Zeichen. Schau noch einmal nach.`, feld: 'code' };
+    const r = lesen(code);
+    if (r.fehler) { ladeFehler = true; letzterFehler = r.fehler; return { ok: false, grund: 'unlesbar', feld: 'code' }; }
+    ladeFehler = false;
+    let k = r.kind;
+    const neu = !k;
+    let schreiben = neu;
+    if (neu) {
+      const grund = namePruefen(konto.name);
+      if (grund) return { ok: false, grund, feld: 'name' };
+      if (!C.klassen.includes(Number(konto.klasse))) return { ok: false, grund: 'Tippe bitte auf deine Klasse.', feld: 'klasse' };
+      k = leeresKind(String(konto.name).trim(), konto.klasse);
+    } else if (konto.name && !namePruefen(konto.name) && String(konto.name).trim() !== k.name) {
+      k.name = String(konto.name).trim();
+      schreiben = true;
+    }
+    kind = k;
+    aktivCode = code;
+    merkeWer(code);
+    return { ok: schreiben ? speichern() : true, kind: k, neu };
   }
 
-  function waehlen(id) {
-    if (!kinder.some(k => k.id === id)) return false;
-    aktivId = id;
-    if (!istVorschau) { try { sessionStorage.setItem(WER, id); } catch (e) { /* nur dieser Tab */ } }
-    return true;
-  }
-
+  /* Der Stand bleibt auf dem Gerät liegen, nur dieser Tab vergisst den Code. */
   function abmelden() {
-    aktivId = null;
-    try { sessionStorage.removeItem(WER); } catch (e) { /* egal */ }
+    kind = null;
+    aktivCode = null;
+    if (!istVorschau) merkeWer(null);
   }
 
   /* ---------- Lernstand je Aufgabe ---------- */
@@ -192,29 +242,58 @@
     return speichern();
   }
 
-  /* Löscht nur das aktive Kind. In der Vorschau wird nichts gelöscht. */
-  function aktivLoeschen() {
-    const k = aktiv();
-    if (!k || istVorschau) return false;
-    kinder = kinder.filter(x => x.id !== k.id);
-    abmelden();
-    return speichern();
+  /* ---------- Abgleich mit der Datenbank (js/cloud.js) ---------- */
+  const kopie = x => JSON.parse(JSON.stringify(x));
+  /* Der Stand ohne Vornamen, so wie er in die Datenbank geht, mit der Nummer der Fassung */
+  function schnappschuss() {
+    if (!kind) return null;
+    const stand = kopie(kind);
+    delete stand.name;
+    return { stand, fassung };
   }
 
-  function aktiv() { return kinder.find(k => k.id === aktivId) || null; }
+  /* Der Stand, den dieses Gerät zuletzt abgeglichen hat (null: noch nie) */
+  function abgleichsBasis() {
+    if (!aktivCode || istVorschau) return null;
+    try {
+      const d = JSON.parse(localStorage.getItem(abgleichSchluessel(aktivCode)) || 'null');
+      return istObjekt(d) ? d : null;
+    } catch (e) { return null; }
+  }
+
+  /* Ergebnis eines Abgleichs übernehmen. zusammen: der zusammengeführte Stand, der jetzt in der Datenbank steht.
+     vorher: der Schnappschuss, mit dem zusammengeführt wurde. Wurde seitdem weitergeübt, kommt das obendrauf
+     (der Schnappschuss ist dann die Basis). Das Kind-Objekt bleibt dasselbe, nur sein Inhalt wird ersetzt.
+     Gibt zurück, ob auf dem Gerät noch etwas steht, das die Datenbank nicht kennt. */
+  function abgleichUebernehmen(zusammen, vorher = null) {
+    if (!kind || !aktivCode || istVorschau) return false;
+    const weitergeuebt = !!vorher && vorher.fassung !== fassung;
+    const neu = weitergeuebt ? ZS.mische.stand(vorher.stand, schnappschuss().stand, zusammen) : zusammen;
+    Object.assign(kind, normalisiere({ ...kopie(neu), name: kind.name }));
+    ablegen();
+    try { localStorage.setItem(abgleichSchluessel(aktivCode), JSON.stringify(zusammen)); } catch (e) { letzterFehler = e; }
+    return weitergeuebt;
+  }
+
+  /* f wird nach jedem Speichern auf dem Gerät aufgerufen */
+  function beiAenderung(f) { if (!lauscher.includes(f)) lauscher.push(f); }
+
+  function aktiv() { return kind; }
 
   laden();
 
   ZS.speicher = {
-    KEY,
+    BASIS,
+    schluesselFuer,
     istVorschau,
     get ladeFehler() { return ladeFehler; },
     get letzterFehler() { return letzterFehler; },
-    kinder: () => kinder.slice(),
     aktiv,
+    code: () => aktivCode,
+    codePruefen,
+    vorhanden,
     namePruefen,
-    anlegen,
-    waehlen,
+    oeffnen,
     abmelden,
     speichern,
     antwortMerken,
@@ -223,6 +302,9 @@
     heuteSek,
     gefuehlMerken,
     klasseSetzen,
-    aktivLoeschen
+    schnappschuss,
+    abgleichsBasis,
+    abgleichUebernehmen,
+    beiAenderung
   };
 })();

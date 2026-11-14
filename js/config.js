@@ -15,11 +15,32 @@ ZS.config = {
   /* Speicher im Browser. Ändert sich der Aufbau der Daten, schema hochzählen
      und in js/speicher.js eine Umwandlung vom alten Stand ergänzen. */
   speicher: {
-    schluessel: 'zahlenschwarm',      /* localStorage: zahlenschwarm-v<schema> */
-    schema: 1,
-    werSchluessel: 'zahlenschwarm-wer' /* sessionStorage: welches Kind in diesem Tab übt */
+    schluessel: 'zahlenschwarm',      /* localStorage: zahlenschwarm-v<schema>.<code>, je Code ein Eintrag */
+    schema: 2,                        /* 1 = Liste aller Kinder unter einem Schlüssel (bis v=26), wird nicht übernommen */
+    codeLaenge: 8,                    /* wie beim Perlentaucher */
+    codeZeichen: '23456789ABCDEFGHJKMNPQRSTUVWXYZ', /* ohne 0, 1, I, L und O (leicht zu verwechseln) */
+    werSchluessel: 'zahlenschwarm-wer' /* sessionStorage: mit welchem Code in diesem Tab geübt wird */
   },
   nameMaxLaenge: 20,
+
+  /* Gemeinsames Konto (Konto-Umbau): das Firebase-Projekt des Perlentauchers.
+     Diese Angaben sind keine Geheimnisse, sie stehen bei jeder Firebase-Seite im Quelltext.
+     Geschützt werden die Daten durch die Regeln in der Firebase-Konsole. */
+  firebase: {
+    apiKey: 'AIzaSyBX3MUJq69uFyejbEiJimGeAtHMER3OCdE',
+    authDomain: 'lernplattform-44aa1.firebaseapp.com',
+    projectId: 'lernplattform-44aa1',
+    storageBucket: 'lernplattform-44aa1.firebasestorage.app',
+    messagingSenderId: '213839225177',
+    appId: '1:213839225177:web:4cf676269e50c708466c48'
+  },
+  cloud: {
+    kinder: 'kinder',            /* kinder/<code>: Vorname, von der Lehrkraft angelegt (nur lesen) */
+    stand: 'zs_stand',           /* zs_stand/<code>: der Stand dieses Kindes im Zahlenschwarm */
+    schreibPauseMs: 2500,        /* so lange nach der letzten Änderung warten, dann gebündelt schreiben */
+    nochmalMs: 8000,             /* ohne Netz: so lange bis zum nächsten Versuch */
+    ladeWarteMs: 8000            /* so lange höchstens auf die Firebase-Skripte warten, dann geht es ohne weiter */
+  },
   /* Klassen, die ein Kind beim Anlegen wählt (Etappe 7a). Fehlt die Angabe bei einem alten Stand, gilt Klasse 3. */
   klassen: [3, 4],
   klasseStandard: 3,

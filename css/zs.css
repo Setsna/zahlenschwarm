@@ -118,7 +118,6 @@ img { display: block; max-width: 100%; height: auto; }
 .mitte form { width: 100%; display: flex; flex-direction: column; align-items: center; gap: calc(18 * var(--s)); }
 .mitte input[type="text"] { margin-top: 0; text-align: center; }
 .mitte .knopfreihe { justify-content: center; }
-.mitte .kinder-liste { width: 100%; }
 
 /* ---------- Bereiche auf der Startseite ---------- */
 .bereiche-block { width: var(--fenster-breite); display: flex; flex-direction: column; align-items: center; gap: var(--abstand); text-align: center; }
@@ -287,8 +286,6 @@ body.uebt .fuss { display: none; }
 .knopf.leise-knopf { background: rgba(255, 255, 255, 0.82); }
 .knopf:disabled { opacity: .6; cursor: default; transform: none; }
 .knopfreihe { display: flex; flex-wrap: wrap; gap: calc(20 * var(--s)); }
-.kinder-liste { list-style: none; padding: 0; display: grid; gap: calc(20 * var(--s)); grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
-.kinder-liste .knopf { width: 100%; font-family: var(--serif); font-weight: 500; font-size: max(20px, calc(34 * var(--s))); }
 
 /* ---------- Formular ---------- */
 label { font-weight: 700; display: block; }
@@ -300,6 +297,10 @@ input[type="text"] {
   border: 2px solid var(--glas-kante); border-radius: calc(28 * var(--s));
   box-shadow: inset 0 2px 6px rgba(3, 20, 35, 0.18);
 }
+/* Hinweis auf der Startseite, wenn der Stand gerade nur auf dem Gerät liegt */
+.netz-zeile { font-size: max(17px, calc(22 * var(--s))); max-width: 34em; margin-inline: auto; text-align: center; }
+/* Code-Eingabe: Großbuchstaben, etwas gesperrt, damit die 8 Zeichen gut zu lesen sind */
+.code-feld { text-transform: uppercase; letter-spacing: .12em; }
 .hinweis-feld { min-height: 1.4em; font-weight: 700; color: var(--tupfi); }
 .hinweis-feld:empty { display: none; }
 
