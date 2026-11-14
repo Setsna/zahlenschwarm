@@ -48,9 +48,11 @@
 
   /* ---------- Anmelden mit dem Code (Konto-Umbau, Etappe 2c) ---------- */
   /* Der QR-Aufkleber führt auf diese Seite mit #c=CODE am Ende, wie beim Perlentaucher. */
-  const ADRESSE = () => location.hash + location.search;
-  const codeAusAdresse = () => { const m = /[#&?]c=([A-Za-z0-9]{8})(?![A-Za-z0-9])/.exec(ADRESSE()); return m ? m[1].toUpperCase() : null; };
-  const scanSpur = () => /[#&?]c=/.test(ADRESSE());
+  /* Gelesen wird nur der Teil hinter dem #: Der bleibt im Browser. Ein Code hinter einem ? ginge mit dem
+     Seitenaufruf an den Server und wird deshalb nicht angenommen. */
+  const ADRESSE = () => location.hash;
+  const codeAusAdresse = () => { const m = /[#&]c=([A-Za-z0-9]{8})(?![A-Za-z0-9])/.exec(ADRESSE()); return m ? m[1].toUpperCase() : null; };
+  const scanSpur = () => /[#&]c=/.test(ADRESSE());
   /* Den Code aus der Adresszeile nehmen, damit er nicht im Verlauf oder auf einem Bildschirmfoto bleibt */
   function adresseSaeubern() {
     try { if (scanSpur()) history.replaceState(null, '', location.pathname); } catch (e) { /* dann bleibt er stehen */ }
