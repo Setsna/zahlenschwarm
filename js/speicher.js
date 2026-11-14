@@ -1,8 +1,11 @@
 /* Zahlenschwarm: Speicher im Browser.
-   - Je Code ein eigener Eintrag in localStorage: zahlenschwarm-v2.<code>.
+   - Je Code ein eigener Eintrag in localStorage: zahlenschwarm-v2.k<kennung>.
      So sieht auf einem geteilten Gerät kein Kind den Stand eines anderen.
+     Die Kennung wird aus dem Code errechnet (js/kennung.js). Der Code selbst steht nicht im Namen:
+     Er ist zugleich das Passwort und soll sich nach dem Abmelden nicht aus dem Speicher ablesen lassen.
+     Einträge mit dem alten Namen zahlenschwarm-v2.<CODE>… ziehen beim Start um (umziehen()).
    - Mit welchem Code in diesem Tab geübt wird, steht in sessionStorage.
-   - zahlenschwarm-v2.<code>.abgleich hält den Stand, den dieses Gerät zuletzt mit der
+   - zahlenschwarm-v2.k<kennung>.abgleich hält den Stand, den dieses Gerät zuletzt mit der
      Datenbank abgeglichen hat (js/cloud.js, js/mische.js). Er liegt nur auf dem Gerät.
    - Der alte Stand zahlenschwarm-v1 (Liste aller Kinder) wird nicht gelesen und nicht verändert.
    - ?vorschau=N zeigt einen Beispielstand mit N sicheren Aufgaben und speichert nichts. */
@@ -11,7 +14,8 @@
   const C = ZS.config;
   const BASIS = `${C.speicher.schluessel}-v${C.speicher.schema}`;
   const WER = C.speicher.werSchluessel;
-  const schluesselFuer = code => `${BASIS}.${code}`;
+  const LK = window.LagunenKonto;
+  const schluesselFuer = code => `${BASIS}.k${LK.kennung(code)}`;
 
   const abgleichSchluessel = code => `${schluesselFuer(code)}.abgleich`;
 
@@ -183,7 +187,32 @@
   function abmelden() {
     kind = null;
     aktivCode = null;
-    if (!istVorschau) merkeWer(null);
+    if (!istVorschau) { merkeWer(null); LK.kennungVergessen(); }
+  }
+
+  /* Alte Einträge heißen zahlenschwarm-v2.<CODE> und zahlenschwarm-v2.<CODE>.abgleich. Sie bekommen den neuen
+     Namen mit Kennung. Erst wenn der neue Eintrag nachweislich denselben Inhalt hat, wird der alte entfernt.
+     Liegen beide vor, gilt der alte: Nur eine ältere Fassung der Seite schreibt noch unter dem alten Namen,
+     und dann ist das der jüngere Stand. Gibt die Zahl der umgezogenen Einträge zurück. */
+  function umziehen() {
+    if (istVorschau) return 0;
+    const namen = [];
+    try { for (let i = 0; i < localStorage.length; i++) namen.push(localStorage.key(i)); } catch (e) { return 0; }
+    const vorn = BASIS + '.', laenge = C.speicher.codeLaenge;
+    let n = 0;
+    for (const alt of namen) {
+      if (!alt || !alt.startsWith(vorn)) continue;
+      const rest = alt.slice(vorn.length), anfang = rest.slice(0, laenge);
+      if (codePruefen(anfang) !== anfang || (rest.length > laenge && rest[laenge] !== '.')) continue;
+      try {
+        const wert = localStorage.getItem(alt);
+        if (wert === null) continue;
+        const neu = schluesselFuer(anfang) + rest.slice(laenge);
+        localStorage.setItem(neu, wert);
+        if (localStorage.getItem(neu) === wert) { localStorage.removeItem(alt); n++; }
+      } catch (e) { /* bleibt liegen, der nächste Start versucht es wieder */ }
+    }
+    return n;
   }
 
   /* ---------- Lernstand je Aufgabe ---------- */
@@ -282,11 +311,13 @@
 
   function aktiv() { return kind; }
 
+  const umgezogen = umziehen();
   laden();
 
   ZS.speicher = {
     BASIS,
     schluesselFuer,
+    umgezogen,
     istVorschau,
     get ladeFehler() { return ladeFehler; },
     get letzterFehler() { return letzterFehler; },
