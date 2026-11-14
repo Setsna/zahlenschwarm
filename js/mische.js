@@ -17,6 +17,11 @@
      angelegt  das frühere Datum
      geaendert das spätere Datum
 
+   Zurücksetzen durch die Lehrkraft (abgleich): Sie löscht den Stand in der Datenbank. Ein Gerät, das schon
+   einmal abgeglichen hat, erkennt das daran, dass es das Dokument nicht mehr gibt oder dass ein neues mit
+   späterem "angelegt" dasteht. Dann verwirft es seinen Stand und fängt mit dem aus der Datenbank an
+   (oder leer). So kommt ein gelöschter Stand nicht von den Geräten der Kinder zurück.
+
    Der Vorname gehört nicht zum Stand in der Datenbank (er steht im Konto) und kommt hier nicht vor.
    Alles ohne Seiteneffekte: Die drei Eingaben werden nicht verändert. Geprüft in tools/mische-test.html. */
 (() => {
@@ -113,6 +118,32 @@
     return aus;
   }
 
+  /* ---------- Zurücksetzen erkennen ---------- */
+  /* Hat die Lehrkraft den Stand gelöscht, seit dieses Gerät zuletzt abgeglichen hat?
+     - Es gab einen Abgleich (basis), aber das Dokument ist weg.
+     - Oder es steht ein Dokument da, das später angelegt wurde als das zuletzt abgeglichene:
+       Ein anderes Gerät hat nach dem Löschen schon neu angefangen.
+     Ohne basis (noch nie abgeglichen) lässt sich das nicht erkennen, dann wird normal zusammengeführt. */
+  function zurueckgesetzt(basis, fern) {
+    if (!istObjekt(basis)) return false;
+    if (!istObjekt(fern)) return true;
+    const b = zahl(basis.angelegt), f = zahl(fern.angelegt);
+    return b > 0 && f > b;
+  }
+
+  /* Ein leerer Stand. Die Klasse bleibt. */
+  function neuanfang(klasse, jetzt) {
+    return { klasse: klasseOk(klasse) || C.klasseStandard, angelegt: jetzt, aufgaben: {}, schwarm: {}, stempel: {}, zeit: {}, geaendert: jetzt };
+  }
+
+  /* Ein Abgleich: entweder zusammenführen oder, nach dem Zurücksetzen, den Stand des Geräts verwerfen.
+     Ergebnis: { stand, zurueckgesetzt }. jetzt: Zeitpunkt für einen leeren Neuanfang. */
+  function abgleich(basis, lokal, fern, jetzt) {
+    if (!zurueckgesetzt(basis, fern)) return { stand: stand(basis, lokal, fern), zurueckgesetzt: false };
+    const neu = istObjekt(fern) ? stand(null, null, fern) : neuanfang(karte(lokal).klasse, jetzt);
+    return { stand: neu, zurueckgesetzt: true };
+  }
+
   /* ---------- Vergleich ---------- */
   /* Gleicher Inhalt, egal in welcher Reihenfolge die Schlüssel stehen? Damit lässt sich ein
      Schreibvorgang sparen, wenn der Abgleich nichts ändert. */
@@ -125,5 +156,5 @@
   }
   const gleich = (a, b) => JSON.stringify(sortiert(a)) === JSON.stringify(sortiert(b));
 
-  ZS.mische = { stand, gleich, FELDER: ['klasse', 'angelegt', 'aufgaben', 'schwarm', 'stempel', 'zeit', 'geaendert'] };
+  ZS.mische = { stand, abgleich, zurueckgesetzt, neuanfang, gleich, FELDER: ['klasse', 'angelegt', 'aufgaben', 'schwarm', 'stempel', 'zeit', 'geaendert'] };
 })();

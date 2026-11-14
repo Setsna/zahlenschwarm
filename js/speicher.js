@@ -264,10 +264,12 @@
   /* Ergebnis eines Abgleichs übernehmen. zusammen: der zusammengeführte Stand, der jetzt in der Datenbank steht.
      vorher: der Schnappschuss, mit dem zusammengeführt wurde. Wurde seitdem weitergeübt, kommt das obendrauf
      (der Schnappschuss ist dann die Basis). Das Kind-Objekt bleibt dasselbe, nur sein Inhalt wird ersetzt.
+     ersetzen: nach dem Zurücksetzen durch die Lehrkraft gilt nur noch der Stand aus der Datenbank,
+     auch was währenddessen geübt wurde, fällt weg.
      Gibt zurück, ob auf dem Gerät noch etwas steht, das die Datenbank nicht kennt. */
-  function abgleichUebernehmen(zusammen, vorher = null) {
+  function abgleichUebernehmen(zusammen, vorher = null, ersetzen = false) {
     if (!kind || !aktivCode || istVorschau) return false;
-    const weitergeuebt = !!vorher && vorher.fassung !== fassung;
+    const weitergeuebt = !ersetzen && !!vorher && vorher.fassung !== fassung;
     const neu = weitergeuebt ? ZS.mische.stand(vorher.stand, schnappschuss().stand, zusammen) : zusammen;
     Object.assign(kind, normalisiere({ ...kopie(neu), name: kind.name }));
     ablegen();

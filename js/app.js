@@ -517,6 +517,12 @@
     h.hidden = false;
     h.textContent = 'Vorschau: Hier wird nichts gespeichert.';
   }
+  /* Die Lehrkraft hat den Stand zurückgesetzt: Das Gerät hat seinen Stand verworfen (js/cloud.js). */
+  ZS.cloud.beiNeustart(() => {
+    if (['start', 'reihen', 'plusminus', 'tauchbuch'].includes(ansicht) && !document.body.classList.contains('uebt')) ansichtStart();
+    melden('Deine Lehrkraft hat deinen Zahlenschwarm neu gestartet. Du fängst von vorn an.');
+  });
+
   /* ---------- Start ---------- */
   /* Was das Gerät schon weiß, steht sofort da. Die Antwort aus dem Netz kommt nach. */
   const darfWechseln = () => ['code', 'start'].includes(ansicht) && !document.body.classList.contains('uebt');

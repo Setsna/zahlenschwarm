@@ -62,6 +62,7 @@
      lokal: ohne Anmeldung nur auf dem Gerät · fehler: die Datenbank hat abgelehnt */
   let zustand = { art: 'ok', meldung: null };
   const zuhoerer = [];
+  const neustartHoerer = [];   /* werden gerufen, wenn die Lehrkraft den Stand zurückgesetzt hat */
   function melden(art, meldung = null) {
     if (zustand.art === art && zustand.meldung === meldung) return;
     zustand = { art, meldung };
@@ -190,12 +191,14 @@
      Die Basis ändert sich erst, wenn das Ergebnis wirklich in der Datenbank steht. */
   function vorab(fern) {
     const vorher = S.schnappschuss();
-    const zusammen = M.stand(S.abgleichsBasis(), vorher.stand, fern);
+    const a = M.abgleich(S.abgleichsBasis(), vorher.stand, fern, Date.now());
+    /* Zurückgesetzt: Das erledigt gleich der echte Abgleich in schreiben(), samt Meldung. */
+    if (a.zurueckgesetzt) return;
     const k = S.aktiv();
-    k.klasse = zusammen.klasse;
-    k.aufgaben = zusammen.aufgaben;
-    k.schwarm = zusammen.schwarm;
-    k.stempel = zusammen.stempel;
+    k.klasse = a.stand.klasse;
+    k.aufgaben = a.stand.aufgaben;
+    k.schwarm = a.stand.schwarm;
+    k.stempel = a.stand.stempel;
     /* Die Lernzeit bleibt bis zum echten Abgleich, sonst würde der eigene Zuwachs doppelt gezählt. */
   }
 
@@ -224,18 +227,22 @@
     const vorher = S.schnappschuss();
     const basis = S.abgleichsBasis();
     const fuer = kind.code;
-    let zusammen = null;
+    let zusammen = null, neustart = false;
     melden('wartet');
     laeuft = db.runTransaction(t => t.get(ref).then(snap => {
       const fern = snap.exists ? snap.data() : null;
-      zusammen = M.stand(basis, vorher.stand, fern);
+      /* Hat die Lehrkraft den Stand gelöscht, verwirft dieses Gerät seinen Stand (js/mische.js). */
+      const a = M.abgleich(basis, vorher.stand, fern, Date.now());
+      zusammen = a.stand;
+      neustart = a.zurueckgesetzt;
       if (!fern || !M.gleich(zusammen, fern)) t.set(ref, zusammen);
     })).then(() => {
       laeuft = null;
       /* Inzwischen abgemeldet oder ein anderes Kind? Dann nichts mehr anfassen. */
       if (!bereit || !kind || kind.code !== fuer || S.code() !== fuer) return false;
-      const nochmal = S.abgleichUebernehmen(zusammen, vorher);
+      const nochmal = S.abgleichUebernehmen(zusammen, vorher, neustart);
       melden('ok');
+      if (neustart) for (const f of neustartHoerer.slice()) { try { f(); } catch (e) { /* Anzeige darf den Abgleich nicht stören */ } }
       if (nochmal) spaeter();
       return true;
     }, e => {
@@ -298,6 +305,7 @@
     angemeldet: () => bereit,
     kind: () => kind,
     zustand: () => zustand,
-    beiZustand(f) { if (!zuhoerer.includes(f)) zuhoerer.push(f); f(zustand); }
+    beiZustand(f) { if (!zuhoerer.includes(f)) zuhoerer.push(f); f(zustand); },
+    beiNeustart(f) { if (!neustartHoerer.includes(f)) neustartHoerer.push(f); }
   };
 })();
