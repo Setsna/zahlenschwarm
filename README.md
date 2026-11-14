@@ -37,11 +37,13 @@ Grundlage ist der Lehrplan Thüringen Mathematik Grundschule (Leitidee Zahl und 
 | `index.html` | Grundgerüst der Seite |
 | `js/config.js` | **Alle Einstellungen**: Klassen, Reihenfolge der Reihen, Bedenkzeit, Pausen, Lernstufen, Ziffernzahl je Aufgabenart |
 | `js/lernstand.js` | Lernlogik: Stufen, Fälligkeit, Auswahl der nächsten Aufgabe, „Heute bereit für dich“ |
-| `js/speicher.js` | Speicher im Browser, je Kind ein Eintrag, Vorschau |
+| `js/speicher.js` | Speicher im Browser, je Zugangscode ein Eintrag, Vorschau |
+| `js/mische.js` | Führt den Stand im Browser mit dem aus der Datenbank zusammen |
+| `js/cloud.js` | Anmeldung mit dem Zugangscode und Abgleich mit Firebase |
 | `js/aufgaben.js` | Erzeugt alle Aufgaben, berechnet die Lösung und schreibt Erklärungen und Tipps |
 | `js/tauchbuch.js` | Fische, Stempel, „Das kann ich schon“, Lernzeit |
 | `js/ueben.js` | Üben-Ansicht mit Ziffernfeld, Rückmeldung und Tipps |
-| `js/app.js` | Alle anderen Ansichten und der Bereich „Für Lehrkräfte und Eltern“ |
+| `js/app.js` | Alle anderen Ansichten (auch Code-Eingabe und Klassenwahl) und der Bereich „Für Lehrkräfte und Eltern“ |
 | `css/tokens.css` | Farben, Schriften, Größen und Abstände an einer Stelle |
 | `css/zs.css` | Das gesamte Aussehen |
 | `bilder/tupfi.png`, `bilder/grund-*.webp` | Tupfi und der Unterwasser-Hintergrund (Canva) |
@@ -49,7 +51,7 @@ Grundlage ist der Lehrplan Thüringen Mathematik Grundschule (Leitidee Zahl und 
 | `schriften/` | Andika und Libre Caslon Text mit Lizenztexten (SIL OFL) |
 | `datenschutz.html`, `impressum.html` | Rechtstexte (Datenschutz kurz für Kinder und ausführlich) |
 
-Die Testseiten (Aufgaben-Test, Lernlogik-Test, Rauchtest) liegen nur lokal und nicht auf GitHub, weil `.gitignore` sie sperrt.
+Die Testseiten (Aufgaben-Test, Lernlogik-Test, Mische-Test, Cloud-Test, Rauchtest) und die Firebase-Attrappe dafür liegen nur lokal und nicht auf GitHub, weil `.gitignore` sie sperrt.
 
 ## Vorschau
 
@@ -74,23 +76,30 @@ Alle Größen hängen an einem Maßstab (`--s` in `css/tokens.css`), der sich na
 Die Aufgabenansicht bleibt ruhig: nur Aufgabe, Ziffernfeld und Rückmeldung. Lange Aufgaben aus Klasse 4 werden kleiner gesetzt, damit sie in eine Zeile passen. Zahlen ab 1000 stehen mit schmalem Abstand (12 000).
 Alles, was man antippt, ist ein echter Knopf und mindestens 48 px hoch. Animationen sind sparsam und richten sich nach `prefers-reduced-motion`.
 
-## Wo der Fortschritt liegt
+## Anmeldung und Lernstand
 
-Nur im Browser des Geräts, unter dem Schlüssel `zahlenschwarm-v1` im `localStorage`. Für jedes Kind werden gespeichert: Vorname, Klasse, Lernstand je Aufgabe, Schwarm, Stempel mit Selbsteinschätzung und Lernzeiten.
-Die Kinder arbeiten auf den iPads mit eigenen Accounts, deshalb reicht im Normalfall ein Kind pro Speicher. Sind im selben Browser mehrere Kinder angelegt, fragt die Seite „Wer übt heute?“ (die Wahl gilt für die Sitzung, `sessionStorage`). Einen Passwortschutz zwischen den Kindern gibt es nicht.
-Die Seite bittet den Browser per `navigator.storage.persist()`, die Daten nicht von selbst zu löschen. Ob er zustimmt, entscheidet der Browser.
-Laut WebKit löscht Safari den Speicher einer Webseite, wenn sie an sieben Tagen, an denen Safari benutzt wurde, nicht geöffnet wurde. Seiten, die über das Symbol auf dem Home-Bildschirm starten, sind davon ausgenommen (auf dem iPad noch nicht über mehrere Tage getestet). Die Kinder starten den Zahlenschwarm deshalb am besten von Anfang an über das Symbol auf dem Home-Bildschirm.
-Es gibt keine Anmeldung, keine Datenbank und keine Sicherungsdatei, und die Stände wandern nicht zwischen Geräten. „Alles löschen / Neu anfangen“ im Tauchbuch löscht nur den Stand des gewählten Kindes.
+Die Kinder melden sich mit ihrem Zugangscode an. Es ist derselbe Code wie bei der Lernplattform Perlentaucher, beide nutzen dasselbe Firebase-Projekt. Der Aufkleber mit QR-Code führt auf die Seite mit `#c=CODE` am Ende.
+
+- **Konto:** `kinder/<code>` legt die Lehrkraft im Lehrerbereich des Perlentauchers an. Der Zahlenschwarm liest daraus nur den Vornamen. Codes, die es dort nicht gibt, kommen nicht hinein.
+- **Lernstand:** `zs_stand/<code>` in Firestore: Klasse, Lernstand je Aufgabe, Schwarm, Stempel mit Selbsteinschätzung, Lernzeiten, Zeitpunkt der letzten Änderung. Kein Name.
+- **Im Browser:** `zahlenschwarm-v2.<code>` im `localStorage` (derselbe Stand plus Vorname) und `zahlenschwarm-v2.<code>.abgleich` (der zuletzt abgeglichene Stand). Geübt wird immer gegen den Stand im Browser.
+- **Abgleich:** `js/cloud.js` schreibt kurz nach der letzten Änderung, beim Verlassen der Seite und beim Abmelden. Es überschreibt nie blind, sondern führt den Stand aus der Datenbank mit dem im Browser zusammen (`js/mische.js`). So geht nichts verloren, wenn ein Kind auf zwei Geräten übt.
+- **Ohne Internet:** Ein Code, den das Gerät schon kennt, öffnet den Stand im Browser. Abgeglichen wird, sobald es wieder geht.
+- **Zugriffsregeln:** stehen in der Firebase-Konsole, nicht in diesem Repository. Ein Kind kommt nur an sein eigenes Dokument.
+
+Es gibt keine Lehreransicht und keine Auswertung. Einen Löschknopf für Kinder gibt es nicht, Löschen geht über die Lehrkraft.
+
+Auf dem eigenen Rechner (`localhost`) spricht die Seite nie mit dem echten Firebase. Zum Ausprobieren mit Anmeldung dient `tools/vorschau.html` (nicht in diesem Repository), dort läuft eine Attrappe.
 
 ## Datenschutz
 
-Die Seite setzt keine Cookies und lädt nichts von fremden Servern nach, auch die Schriften liegen hier im Repository.
-**Wer ändert, welche Daten gespeichert werden, oder einen neuen Dienst einbindet, muss `datenschutz.html` mitändern.**
+Die Seite bindet Google Firebase ein (Anmeldung und Datenbank, Skripte von `www.gstatic.com` mit Prüfsumme). Sonst lädt sie nichts von fremden Servern nach, auch die Schriften liegen hier im Repository. Die Content Security Policy in `index.html` erlaubt genau diese Ausnahme.
+**Wer ändert, welche Daten gespeichert werden, oder einen neuen Dienst einbindet, muss `datenschutz.html` mitändern.** Ein neues Feld im Lernstand braucht außerdem eine Änderung der Zugriffsregeln.
 
 ## Nach einer Änderung: Versionsnummer hochzählen
 
 Browser merken sich `js` und `css` eine Weile und liefern sonst die alte Fassung aus.
-Deshalb hängt hinter jeder lokalen `js`- und `css`-Datei in `index.html`, `impressum.html` und `datenschutz.html` ein `?v=25`.
+Deshalb hängt hinter jeder lokalen `js`- und `css`-Datei in `index.html`, `impressum.html` und `datenschutz.html` ein `?v=N` mit einer Zahl.
 **Wer etwas an `js` oder `css` ändert, zählt diese Zahl in allen drei Dateien um eins hoch.**
 Bilder haben eine eigene Nummer: `bildStand` in `js/config.js`.
 

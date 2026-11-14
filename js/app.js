@@ -441,7 +441,7 @@
       <details class="fenster erwachsene">
         <summary><h2 id="h-erw">Für Lehrkräfte und Eltern</h2></summary>
         <div class="erwachsene__inhalt">
-          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000. Beim Anlegen wählt jedes Kind seine Klasse. In Klasse 4 kommen Mal- und Geteilt-Aufgaben mit Stufenzahlen dazu (30 · 4, 300 · 4, 3 000 · 4, 30 · 40 und die Umkehraufgaben). Sie beruhen immer auf einer Aufgabe aus dem kleinen Einmaleins und werden über den Stellenwert erklärt. Dazu kommt Plus und Minus im Kopf bis 1 000 000 mit Tausendern, Hundertern und Zehntausendern, auch über den vollen Tausender oder Zehntausender, und das Ergänzen bis zu einer Stufenzahl (3 600 + ? = 10 000). Ändern lässt sich die Klasse im Tauchbuch.</p>
+          <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000. Beim ersten Anmelden wählt jedes Kind seine Klasse. In Klasse 4 kommen Mal- und Geteilt-Aufgaben mit Stufenzahlen dazu (30 · 4, 300 · 4, 3 000 · 4, 30 · 40 und die Umkehraufgaben). Sie beruhen immer auf einer Aufgabe aus dem kleinen Einmaleins und werden über den Stellenwert erklärt. Dazu kommt Plus und Minus im Kopf bis 1 000 000 mit Tausendern, Hundertern und Zehntausendern, auch über den vollen Tausender oder Zehntausender, und das Ergänzen bis zu einer Stufenzahl (3 600 + ? = 10 000). Ändern lässt sich die Klasse im Tauchbuch.</p>
 
           <h3>So ist das Üben gedacht</h3>
           <p>Jede Aufgabe hat ihren eigenen Lernstand. Was ein Kind noch nicht sicher kann, kommt öfter und auch an späteren Tagen wieder. Was es sicher kann, kommt seltener. Als sicher gilt eine Aufgabe erst, wenn das Kind sie an mehreren Tagen zügig und ohne Tipp gelöst hat. Bei Plus und Minus zählt der Lernstand je Aufgabenart, zum Beispiel „Einer mit Übergang“.</p>
@@ -470,10 +470,11 @@
             <li>Das Einmaleins steckt im Alltag: Eierkartons, Fenster, Treppenstufen, Taschengeld.</li>
             <li>Nicht vorsagen. Geben Sie lieber einen Tipp, zum Beispiel: „Was ist 5 mal 8?“</li>
             <li>Schauen Sie gemeinsam ins Tauchbuch. Dort sieht Ihr Kind, was es schon sicher kann. Fragen Sie nach, wenn dort „Noch wackelig“ steht.</li>
+            <li>Der Code gehört Ihrem Kind. Wer ihn kennt, kann sich damit anmelden. Auf einem fremden Gerät am Ende bitte auf „Abmelden“ tippen.</li>
           </ul>
 
           <h3>Daten</h3>
-          <p>Es gibt kein Konto und keine Anmeldung. Gespeichert werden nur der Vorname, die Klasse, der Lernstand, der Schwarm, die Stempel und die Lernzeit, und zwar nur in diesem Browser auf diesem Gerät. Nichts wird an einen Server geschickt. Im Tauchbuch kann ein Kind seinen Stand ganz löschen. Mehr steht unter <a href="datenschutz.html">Datenschutz</a>.</p>
+          <p>Die Kinder melden sich mit ihrem Zugangscode an. Es ist derselbe wie beim Perlentaucher. Gespeichert werden unter diesem Code die Klasse, der Lernstand, der Schwarm, die Stempel und die Lernzeit. So ist der Stand auf jedem Gerät da, in der Schule und zu Hause. Der Stand liegt zusätzlich im Browser des Geräts, damit auch ohne Internet geübt werden kann. Andere Kinder sehen ihn nicht, eine Auswertung für die Lehrkraft gibt es nicht. Löschen lassen können Sie den Stand über die Lehrkraft. Mehr steht unter <a href="datenschutz.html">Datenschutz</a>.</p>
         </div>
       </details>`;
   }

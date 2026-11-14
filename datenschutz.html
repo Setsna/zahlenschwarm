@@ -18,9 +18,9 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Zahlenschwarm">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="stylesheet" href="schriften/schriften.css?v=29">
-  <link rel="stylesheet" href="css/tokens.css?v=29">
-  <link rel="stylesheet" href="css/zs.css?v=29">
+  <link rel="stylesheet" href="schriften/schriften.css?v=30">
+  <link rel="stylesheet" href="css/tokens.css?v=30">
+  <link rel="stylesheet" href="css/zs.css?v=30">
 </head>
 <body>
   <div class="grund" aria-hidden="true"></div>
@@ -35,46 +35,93 @@
     <section class="fenster rechtstext" aria-label="Datenschutzerklärung">
       <div class="kurz-kinder">
         <h2>Kurz erklärt, auch für Kinder</h2>
-        <p>Die Seite merkt sich deinen Vornamen, deine Klasse und welche Aufgaben du schon gut kannst. So kannst du später weiterüben.</p>
-        <p>Das alles bleibt auf diesem Gerät. Nichts davon geht ins Internet. Deine Lehrkraft und andere Kinder können es von ihren Geräten aus nicht sehen.</p>
-        <p>Übt noch jemand an diesem Gerät im selben Browser, sieht er deinen Namen in der Liste. Wenn er ihn antippt, kann er auch deinen Stand sehen.</p>
-        <p>In deinem Tauchbuch kannst du alles von dir löschen und neu anfangen.</p>
+        <p>Du meldest dich mit deinem Code an. Es ist derselbe Code wie beim Perlentaucher.</p>
+        <p>Die Seite merkt sich, in welche Klasse du gehst und welche Aufgaben du schon gut kannst. Sie merkt sich auch deinen Schwarm, deine Stempel und wie lange du geübt hast.</p>
+        <p>Das alles wird im Internet gespeichert, unter deinem Code. So kannst du auf jedem Gerät dort weiterüben, wo du aufgehört hast.</p>
+        <p>Andere Kinder können deinen Stand nicht sehen. Es gibt keine Werbung und keine Rangliste.</p>
+        <p>Behalte deinen Code für dich. Wer ihn kennt, kann sich als du anmelden.</p>
+        <p>Wenn du möchtest, dass alles gelöscht wird, sag es deiner Lehrkraft.</p>
       </div>
 
       <h2>1. Verantwortlicher</h2>
-      <p>Verantwortlich für diese Seite im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:</p>
+      <p>Verantwortlich für die Datenverarbeitung auf dieser Seite im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:</p>
       <div class="rechts-kasten">
         <p><b>Ingo H.</b><br>Lehrkraft<br>E-Mail: <a href="mailto:setsna@gmail.com">setsna@gmail.com</a></p>
       </div>
+      <p>Der Zahlenschwarm ist ein Unterrichtsangebot für eine einzelne Klasse. Er wurde privat entwickelt und wird privat betrieben.</p>
 
-      <h2>2. Was auf dem Gerät gespeichert wird</h2>
-      <p>Die Seite legt im lokalen Speicher des Browsers (localStorage) für jedes Kind einen Eintrag an. Er enthält:</p>
+      <h2>2. Welche Daten verarbeitet werden</h2>
+      <h3>Das gemeinsame Konto</h3>
+      <p>Der Zahlenschwarm nutzt dasselbe Konto wie die Lernplattform Perlentaucher. Dazu gehören:</p>
       <ul class="liste">
-        <li>den Vornamen oder Spitznamen, den das Kind selbst eingibt</li>
-        <li>die Klasse (3 oder 4), die das Kind beim Anlegen wählt</li>
-        <li>den Zeitpunkt, an dem der Eintrag angelegt wurde</li>
-        <li>den Lernstand je Aufgabe: Lernstufe, Anzahl richtiger und falscher Antworten, Zeitpunkt der letzten Übung, die Überlegezeit bis zur ersten getippten Ziffer, ob ein Tipp genommen wurde und die Zahl der Fehler am selben Tag</li>
+        <li>der Vorname</li>
+        <li>ein achtstelliger Zugangscode, der die Anmeldung ersetzt</li>
+        <li>der Zeitpunkt, an dem die Lehrkraft den Zugang freigeschaltet hat</li>
+      </ul>
+      <p>Der Zahlenschwarm liest daraus nur den Vornamen, um das Kind zu begrüßen. Er ändert an diesem Konto nichts. Es werden keine Nachnamen, Geburtsdaten, Anschriften, Telefonnummern oder E-Mail-Adressen der Kinder erhoben. Für die Anmeldung legt die Seite im Hintergrund ein Konto an, dessen Kennung nur aus dem Zugangscode besteht.</p>
+
+      <h3>Der Lernstand im Zahlenschwarm</h3>
+      <p>Unter dem Zugangscode speichert der Zahlenschwarm:</p>
+      <ul class="liste">
+        <li>die Klasse (3 oder 4), die das Kind beim ersten Anmelden wählt</li>
+        <li>den Zeitpunkt, an dem der Lernstand angelegt wurde, und den Zeitpunkt der letzten Änderung</li>
+        <li>den Lernstand je Aufgabe: Lernstufe, Tag der nächsten Wiederholung, Anzahl richtiger und falscher Antworten, Zeitpunkt der letzten Übung, die Überlegezeit bis zur ersten getippten Ziffer, ob ein Tipp genommen wurde und die Zahl der Fehler am selben Tag</li>
         <li>den Fischschwarm: welche Aufgaben wann zum ersten Mal sicher waren</li>
         <li>Stempel für geschaffte Reihen mit Datum und, wenn das Kind sie gewählt hat, seine Selbsteinschätzung („Ganz leicht“, „Geht gut“ oder „Noch wackelig“)</li>
         <li>die Lernzeit je Bereich und die Lernzeit des heutigen Tages</li>
       </ul>
-      <p>Welches Kind gerade übt, steht bis zum Schließen des Browser-Tabs im Sitzungsspeicher (sessionStorage).</p>
-      <p>Diese Daten werden weder an den Verantwortlichen noch an Dritte übertragen. Es gibt kein Konto, keine Anmeldung und keine Datenbank. Der Verantwortliche hat keinen Zugriff auf die Daten. Es werden keine Cookies gesetzt.</p>
-      <p>Die Speicherung ist unbedingt erforderlich, damit der ausdrücklich gewünschte Dienst funktioniert, nämlich das Weiterüben nach dem eigenen Lernstand (§ 25 Abs. 2 Nr. 2 TDDDG). Die Seite bittet den Browser außerdem, die Daten nicht von selbst zu löschen (Storage API, „persist“). Ob er das tut, entscheidet der Browser.</p>
-      <p><b>Mehrere Kinder an einem Gerät:</b> Die Namen sind nicht durch ein Passwort geschützt. Wer dasselbe Gerät im selben Browser benutzt, sieht die Namen und kann nach dem Antippen den Stand dieses Kindes sehen.</p>
+      <p>Der Vorname steht nicht im Lernstand. Freie Texte kann ein Kind im Zahlenschwarm nirgends eingeben.</p>
 
-      <h2>3. Daten beim Aufruf der Seite</h2>
-      <p>Die Seite wird über GitHub Pages bereitgestellt (GitHub Inc., USA). Wie bei jeder Webseite verarbeitet der Anbieter dabei Verbindungsdaten, auch die IP-Adresse. Der Verantwortliche wertet diese Daten nicht aus. Eine Übermittlung in die USA ist nicht auszuschließen. Sie stützt sich auf den Angemessenheitsbeschluss der Europäischen Kommission zum EU-US Data Privacy Framework beziehungsweise auf Standardvertragsklauseln. Rechtsgrundlage ist das berechtigte Interesse an einer sicheren Bereitstellung des Lernangebots (Art. 6 Abs. 1 lit. f DSGVO).</p>
-      <p>Andere Dienste sind nicht eingebunden. Schriften und Bilder liegen auf derselben Adresse wie die Seite. Es gibt keine Analysewerkzeuge, keine Werbung und keine Inhalte anderer Anbieter. Die Seite enthält keine KI. Die Tipps von Tupfi sind vorbereitete Texte.</p>
+      <h3>Technisch notwendige Daten</h3>
+      <p>Beim Aufruf der Seite verarbeiten die eingesetzten Anbieter, wie bei jeder Webseite, Verbindungsdaten einschließlich der IP-Adresse. Der Verantwortliche wertet diese Daten nicht aus. Es sind keine Zugriffsstatistik und keine Analysewerkzeuge eingebunden.</p>
 
-      <h2>4. Speicherdauer und Löschen</h2>
-      <p>Die Daten bleiben im Browser, bis sie gelöscht werden. Eine Sicherungskopie gibt es nicht: Werden die Browserdaten gelöscht, ist auch der Lernstand weg. Alle Daten der Seite lassen sich in den Einstellungen des Browsers löschen (Websitedaten). Im Tauchbuch gibt es außerdem den Knopf „Alles löschen / Neu anfangen“. Er löscht nur den Stand des Kindes, das gerade übt.</p>
+      <h2>3. Zweck und Rechtsgrundlage</h2>
+      <p>Die Daten dienen nur dazu, den Lernstand zu sichern, damit das Kind auf jedem Gerät nach seinem eigenen Stand weiterüben kann, und ihm Rückmeldung zu geben.</p>
+      <p>Die Nutzung zu Hause ist freiwillig. Rechtsgrundlage ist insoweit die Einwilligung der Erziehungsberechtigten nach Art. 6 Abs. 1 lit. a in Verbindung mit Art. 8 DSGVO. Die Einwilligung kann jederzeit formlos gegenüber dem Verantwortlichen widerrufen werden. Die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt davon unberührt.</p>
 
-      <h2>5. Ihre Rechte</h2>
-      <p>Betroffene und Erziehungsberechtigte haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Widerspruch (Art. 15 bis 18 und 21 DSGVO). Weil die Lerndaten nur auf dem eigenen Gerät liegen, lassen sie sich dort direkt ansehen und löschen. Für Fragen genügt eine formlose Nachricht an die oben genannte Adresse. Außerdem gibt es ein Beschwerderecht bei einer Datenschutzaufsichtsbehörde (Art. 77 DSGVO).</p>
+      <h2>4. Wer Zugriff hat</h2>
+      <ul class="liste">
+        <li>Das Kind sieht nur seinen eigenen Lernstand. Der Zugriff auf fremde Daten ist durch Regeln in der Datenbank unterbunden, nicht nur durch die Gestaltung der Oberfläche.</li>
+        <li>Die Lehrkraft kann die Daten in der Datenbank technisch einsehen. Das ist nötig, um Auskunft zu geben und Daten zu löschen. Eine Auswertung der Lernstände findet im Zahlenschwarm nicht statt, es gibt dafür keine Ansicht.</li>
+        <li>Eine Weitergabe an Dritte findet nicht statt. Es gibt keine Werbung, keinen Weiterverkauf und keine Auswertung zu anderen Zwecken.</li>
+        <li>Es gibt bewusst keine Rangliste und keinen Vergleich der Kinder untereinander.</li>
+      </ul>
 
-      <h2>6. Sicherheit</h2>
-      <p>Die Seite wird verschlüsselt über HTTPS übertragen.</p>
+      <h2>5. Eingesetzte Dienste</h2>
+      <p><b>Google Firebase</b> (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland) für Anmeldung und Datenbank. Die Datenbank ist in einer europäischen Region eingerichtet. Die Anmeldung (Firebase Authentication) verarbeitet Google nach eigenen Angaben in Rechenzentren in den USA. Dort liegt die Anmeldekennung des Kindes, die nur aus dem Zugangscode besteht. Die Programmteile von Firebase werden von Servern von Google geladen. Es besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO.</p>
+      <p><b>GitHub Pages</b> (GitHub Inc., USA) für die Auslieferung der Seite selbst. Dort liegen nur die Programmdateien, keine Daten von Kindern.</p>
+      <p>Eine Übermittlung in Drittländer lässt sich dabei nicht vollständig ausschließen. Soweit sie stattfindet, stützt sie sich auf die Standardvertragsklauseln der Europäischen Kommission beziehungsweise den Angemessenheitsbeschluss zum EU-US Data Privacy Framework.</p>
+      <p>Andere Dienste sind nicht eingebunden. Schriften und Bilder liegen auf derselben Adresse wie die Seite. Die Seite enthält keine KI. Die Tipps von Tupfi sind vorbereitete Texte.</p>
+
+      <h2>6. Speicherung im Gerät</h2>
+      <p>Die Seite legt im Browser des Geräts ab:</p>
+      <ul class="liste">
+        <li>den Lernstand und den Vornamen, damit ohne Internetverbindung weitergeübt werden kann</li>
+        <li>eine zweite Kopie des zuletzt abgeglichenen Lernstands. Daran erkennt die Seite, was auf diesem Gerät neu dazugekommen ist.</li>
+        <li>die Anmeldung, damit das Kind beim nächsten Öffnen nicht erneut den Code eintippen muss</li>
+        <li>einen Zwischenspeicher der Datenbank (Firebase), der zuletzt geladene Daten des Kindes für Zeiten ohne Internet bereithält</li>
+      </ul>
+      <p>Diese Speicherung ist für den ausdrücklich gewünschten Dienst unbedingt erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG). Eine Einwilligung ist dafür nicht nötig. Es werden keine Cookies zu Werbe- oder Analysezwecken gesetzt. Die Seite bittet den Browser außerdem, die Daten nicht von selbst zu löschen. Ob er das tut, entscheidet der Browser.</p>
+      <p><b>Geteilte Geräte:</b> Mit „Abmelden“ endet die Anmeldung. Der Lernstand des Kindes bleibt aber im Browser dieses Geräts liegen, damit es dort auch ohne Internet wieder üben kann. Angezeigt wird er nur nach Eingabe des Codes. Wer ein Gerät weitergibt, kann die Daten der Seite in den Einstellungen des Browsers löschen (Websitedaten).</p>
+
+      <h2>7. Speicherdauer und Löschen</h2>
+      <p>Die Daten eines Kindes werden gelöscht, sobald sie für den Unterricht nicht mehr gebraucht werden, spätestens am Ende des Schuljahres, in dem das Kind die Klasse verlässt. Auf Verlangen der Erziehungsberechtigten wird unverzüglich gelöscht.</p>
+      <p>Gelöscht wird dabei der Lernstand in der Datenbank. Das gemeinsame Konto mit dem Vornamen und das Anmeldekonto, dessen Kennung nur aus dem Zugangscode besteht, löscht die Lehrkraft gesondert. Was im Browser eines Geräts gespeichert ist (Abschnitt 6), bleibt dort, bis es auf dem Gerät gelöscht wird.</p>
+      <p>Ein Kind kann seinen Lernstand nicht selbst löschen. Das geht über die Lehrkraft.</p>
+
+      <h2>8. Rechte der Betroffenen</h2>
+      <p>Erziehungsberechtigte können für ihr Kind jederzeit</p>
+      <ul class="liste">
+        <li>Auskunft über die gespeicherten Daten verlangen (Art. 15 DSGVO),</li>
+        <li>Berichtigung (Art. 16), Löschung (Art. 17) oder Einschränkung der Verarbeitung (Art. 18) verlangen,</li>
+        <li>der Verarbeitung widersprechen (Art. 21) und die Einwilligung widerrufen,</li>
+        <li>die Daten in einem übertragbaren Format erhalten (Art. 20).</li>
+      </ul>
+      <p>Eine formlose Nachricht an die oben genannte Adresse genügt. Es besteht außerdem ein Beschwerderecht bei einer Datenschutzaufsichtsbehörde (Art. 77 DSGVO).</p>
+
+      <h2>9. Sicherheit</h2>
+      <p>Die Übertragung erfolgt durchgehend verschlüsselt über HTTPS. Der Zugriff auf die Datenbank ist durch Regeln in der Datenbank beschränkt. Der Zugang der Lehrkraft ist an ein persönliches Konto mit Zwei-Faktor-Authentifizierung gebunden.</p>
+      <p>Der Zugangscode des Kindes dient zugleich als Passwort. Diese Vereinfachung ist bewusst gewählt, weil die Kinder im Grundschulalter sind. Die gespeicherten Daten sind deshalb bewusst sparsam gehalten.</p>
     </section>
 
     <p><a class="knopf" href="index.html">← Zurück zum Zahlenschwarm</a></p>

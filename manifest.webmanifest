@@ -1,7 +1,7 @@
 {
   "name": "Zahlenschwarm",
   "short_name": "Zahlenschwarm",
-  "description": "Einmaleins und Kopfrechnen für Klasse 3 und 4. Ohne Anmeldung, alles bleibt auf dem Gerät.",
+  "description": "Einmaleins und Kopfrechnen für Klasse 3 und 4. Üben nach dem eigenen Lernstand.",
   "lang": "de",
   "start_url": "./index.html",
   "scope": "./",
