@@ -437,14 +437,32 @@
     melden(ok ? `Du bist jetzt in Klasse ${n}.` : SPEICHER_FEHLT);
   }
 
-  /* ---------- Für Lehrkräfte und Eltern (aufklappbar, am Ende jeder Startansicht) ---------- */
+  /* ---------- Für Eltern / Für Lehrkräfte (aufklappbar, am Ende jeder Startansicht; Inhalt am 15.11.2026 ohne Textänderung aufgeteilt) ---------- */
   function erwachsene() {
     return `
-      <details class="fenster erwachsene">
-        <summary><h2 id="h-erw">Für Lehrkräfte und Eltern</h2></summary>
+      <div class="erwachsene-bereich">
+      <details class="fenster erwachsene erwachsene--eltern">
+        <summary><h2>Für Eltern</h2></summary>
         <div class="erwachsene__inhalt">
           <p>Der Zahlenschwarm ist ein Trainer für das Einmaleins, das Geteilt-Rechnen und das Rechnen im Kopf bis 1000. Er enthält zurzeit die Inhalte von Klasse 3: das kleine Einmaleins, die Umkehraufgaben und Plus und Minus im Kopf bis 1000. Beim ersten Anmelden wählt jedes Kind seine Klasse. In Klasse 4 kommen Mal- und Geteilt-Aufgaben mit Stufenzahlen dazu (30 · 4, 300 · 4, 3 000 · 4, 30 · 40 und die Umkehraufgaben). Sie beruhen immer auf einer Aufgabe aus dem kleinen Einmaleins und werden über den Stellenwert erklärt. Dazu kommt Plus und Minus im Kopf bis 1 000 000 mit Tausendern, Hundertern und Zehntausendern, auch über den vollen Tausender oder Zehntausender, und das Ergänzen bis zu einer Stufenzahl (3 600 + ? = 10 000). Ändern lässt sich die Klasse im Tauchbuch.</p>
 
+          <h3>Wie Sie zu Hause helfen können</h3>
+          <ul class="liste">
+            <li>Lieber oft und kurz als selten und lang: Zehn Minuten an mehreren Tagen bringen mehr als eine Stunde am Stück.</li>
+            <li>Über Fehler sprechen statt sie zu tadeln. Fragen Sie: „Wie hast du gerechnet?“</li>
+            <li>Das Einmaleins steckt im Alltag: Eierkartons, Fenster, Treppenstufen, Taschengeld.</li>
+            <li>Nicht vorsagen. Geben Sie lieber einen Tipp, zum Beispiel: „Was ist 5 mal 8?“</li>
+            <li>Schauen Sie gemeinsam ins Tauchbuch. Dort sieht Ihr Kind, was es schon sicher kann. Fragen Sie nach, wenn dort „Noch wackelig“ steht.</li>
+            <li>Der Code gehört Ihrem Kind. Wer ihn kennt, kann sich damit anmelden. Auf einem fremden Gerät am Ende bitte auf „Abmelden“ tippen.</li>
+          </ul>
+
+          <h3>Daten</h3>
+          <p>Die Kinder melden sich mit ihrem Zugangscode an. Es ist derselbe wie beim Perlentaucher. Gespeichert werden unter diesem Code die Klasse, der Lernstand, der Schwarm, die Stempel und die Lernzeit. So ist der Stand auf jedem Gerät da, in der Schule und zu Hause. Der Stand liegt zusätzlich im Browser des Geräts, damit auch ohne Internet geübt werden kann. Andere Kinder sehen ihn nicht, eine Auswertung für die Lehrkraft gibt es nicht. Löschen lassen können Sie den Stand über die Lehrkraft. Mehr steht unter <a href="datenschutz.html">Datenschutz</a>.</p>
+        </div>
+      </details>
+      <details class="fenster erwachsene erwachsene--lehrkraefte">
+        <summary><h2>Für Lehrkräfte</h2></summary>
+        <div class="erwachsene__inhalt">
           <h3>So ist das Üben gedacht</h3>
           <p>Jede Aufgabe hat ihren eigenen Lernstand. Was ein Kind noch nicht sicher kann, kommt öfter und auch an späteren Tagen wieder. Was es sicher kann, kommt seltener. Als sicher gilt eine Aufgabe erst, wenn das Kind sie an mehreren Tagen zügig und ohne Tipp gelöst hat. Bei Plus und Minus zählt der Lernstand je Aufgabenart, zum Beispiel „Einer mit Übergang“.</p>
           <p>Bei einem Fehler zeigt die Seite einen Rechenweg Schritt für Schritt, zum Beispiel über eine leichte Kernaufgabe, statt nur die Lösung. Eine Uhr gibt es nicht. Die Seite merkt sich nur, wie lange ein Kind bis zur ersten getippten Ziffer überlegt. So erkennt sie, ob eine Aufgabe schon auswendig sitzt oder noch abgeleitet wird.</p>
@@ -465,20 +483,9 @@
             </table>
           </div>
 
-          <h3>Wie Sie zu Hause helfen können</h3>
-          <ul class="liste">
-            <li>Lieber oft und kurz als selten und lang: Zehn Minuten an mehreren Tagen bringen mehr als eine Stunde am Stück.</li>
-            <li>Über Fehler sprechen statt sie zu tadeln. Fragen Sie: „Wie hast du gerechnet?“</li>
-            <li>Das Einmaleins steckt im Alltag: Eierkartons, Fenster, Treppenstufen, Taschengeld.</li>
-            <li>Nicht vorsagen. Geben Sie lieber einen Tipp, zum Beispiel: „Was ist 5 mal 8?“</li>
-            <li>Schauen Sie gemeinsam ins Tauchbuch. Dort sieht Ihr Kind, was es schon sicher kann. Fragen Sie nach, wenn dort „Noch wackelig“ steht.</li>
-            <li>Der Code gehört Ihrem Kind. Wer ihn kennt, kann sich damit anmelden. Auf einem fremden Gerät am Ende bitte auf „Abmelden“ tippen.</li>
-          </ul>
-
-          <h3>Daten</h3>
-          <p>Die Kinder melden sich mit ihrem Zugangscode an. Es ist derselbe wie beim Perlentaucher. Gespeichert werden unter diesem Code die Klasse, der Lernstand, der Schwarm, die Stempel und die Lernzeit. So ist der Stand auf jedem Gerät da, in der Schule und zu Hause. Der Stand liegt zusätzlich im Browser des Geräts, damit auch ohne Internet geübt werden kann. Andere Kinder sehen ihn nicht, eine Auswertung für die Lehrkraft gibt es nicht. Löschen lassen können Sie den Stand über die Lehrkraft. Mehr steht unter <a href="datenschutz.html">Datenschutz</a>.</p>
         </div>
-      </details>`;
+      </details>
+      </div>`;
   }
 
   function anzeigen() {

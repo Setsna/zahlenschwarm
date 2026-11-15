@@ -428,3 +428,24 @@ dialog .knopfreihe { margin-top: var(--abstand); }
 /* Kein Doppeltipp-Zoom in Safari (Kinder tippen Knöpfe schnell hintereinander, Safari zoomte dann).
    Zoomen mit zwei Fingern bleibt möglich. Flächen zum Ziehen oder Malen behalten ihr eigenes touch-action. (12.11.2026) */
 html, body, button, a, input, label, summary, select, textarea { touch-action: manipulation; }
+
+/* Erwachsenenbereich wie bei den Riff-Akten (Ingo, 15.11.2026): zugeklappt eine kleine Nebelglas-Pille
+   mit Pfeil links, damit Kinder nicht hineintippen; aufgeklappt das Glasfenster wie bisher. */
+.erwachsene-bereich { width: var(--fenster-breite); max-width: 100%; margin-inline: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.erwachsene-bereich .erwachsene { width: 100%; }
+.erwachsene-bereich .erwachsene:not([open]) {
+  width: fit-content; max-width: 100%; border-radius: 999px; background: rgba(10, 52, 84, 0.7); box-shadow: none; border: 0;
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+}
+.erwachsene-bereich .erwachsene:not([open])::before, .erwachsene-bereich .erwachsene:not([open])::after { display: none; }
+.erwachsene summary { justify-content: flex-start; gap: .55em; }
+.erwachsene-bereich .erwachsene:not([open]) summary { min-height: 48px; padding: 0 1.1em; border-radius: 999px; }
+.erwachsene-bereich .erwachsene:not([open]) summary h2 { font-family: inherit; font-weight: 700; font-size: 16px; }
+.erwachsene summary::after { display: none; }
+.erwachsene summary::before {
+  content: ""; flex: none; width: .55em; height: .55em; margin-right: .15em;
+  border-right: 2.5px solid currentColor; border-bottom: 2.5px solid currentColor;
+  transform: rotate(-45deg); transition: transform .2s ease;
+}
+.erwachsene[open] summary::before { transform: rotate(45deg); }
+@media (prefers-reduced-motion: reduce) { .erwachsene summary::before { transition: none; } }
