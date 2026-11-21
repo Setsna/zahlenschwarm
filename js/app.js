@@ -60,6 +60,7 @@
 
   /* Ergebnis von ZS.cloud.anmelden() oder start() anzeigen */
   function nachAnmelden(r) {
+    if (!r.ok && r.zu) { ansichtZu(); return; }
     if (!r.ok) {
       if (ansicht === 'code' && app.querySelector('#code')) {
         app.querySelector('#code-form button[type="submit"]').disabled = false;
@@ -71,6 +72,31 @@
     if (r.brauchtKlasse) { ansichtKlasse(r.name); return; }
     ansichtStart();
     if (r.gespeichert === false) melden(SPEICHER_FEHLT);
+  }
+
+  /* Die Lehrkraft hat den Zahlenschwarm im Lehrerbereich gesperrt (oeffentlich/plattformen, js/cloud.js).
+     Das Kind ist schon wieder abgemeldet, sein Stand bleibt auf dem Gerät und in der Datenbank.
+     Text von Ingo gewählt am 21.11.2026 (ZS.cloud.TEXT.zu): „Bald offen!“ als Überschrift, der Rest darunter.
+     Gebaut wie in der Kieselwaage (v=7), hier im Stil der Code-Eingabe. */
+  const SCHLOSS = '<svg class="schloss" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  function ansichtZu() {
+    /* Läuft gerade eine Übung (Antwort kam spät): still beenden, ohne Rückkehr-Ansicht (das Kind ist abgemeldet) */
+    if (ZS.ueben && ZS.ueben.laeuft) ZS.ueben.beenden(true, true);
+    document.body.classList.remove('uebt');
+    const text = ZS.cloud.TEXT.zu;
+    const i = text.indexOf('! ');
+    const titel = i > 0 ? text.slice(0, i + 1) : '';
+    const rest = i > 0 ? text.slice(i + 2) : text;
+    ansicht = 'zu';
+    melden('');
+    zeigen(`
+      ${kopf('Willkommen!')}
+      <section class="fenster mitte zu" aria-labelledby="h-zu">
+        <h2 id="h-zu">${titel ? SCHLOSS + esc(titel) : '<span class="nurvorlesen">Bald offen</span>'}</h2>
+        <p>${esc(rest)}</p>
+        <p class="knopfreihe"><button type="button" class="knopf haupt" data-aktion="abmelden">Abmelden</button></p>
+      </section>
+      ${erwachsene()}`, 'Bald offen');
   }
 
   function ansichtCode(hinweis = '') {
@@ -543,7 +569,7 @@
       /* Ein gescannter Code hat Vorrang vor dem Kind, das auf dem Gerät noch angemeldet ist. */
       if (S.aktiv() && S.code() !== qr) S.abmelden();
       if (S.aktiv()) ansichtStart(); else ansichtCode(MOMENT);
-      ZS.cloud.anmelden(qr).then(r => { if (darfWechseln()) { if (!r.ok) ansichtCode(r.grund); else nachAnmelden(r); } }, () => {});
+      ZS.cloud.anmelden(qr).then(r => { if (r.zu) ansichtZu(); else if (darfWechseln()) { if (!r.ok) ansichtCode(r.grund); else nachAnmelden(r); } }, () => {});
       return;
     }
     anzeigen();
@@ -551,11 +577,14 @@
     const gemerkt = S.code();
     ZS.cloud.start().then(r => {
       if (r.ok) { if (darfWechseln()) nachAnmelden(r); return null; }
+      /* Gesperrt: auch mitten in einer Übung wechseln, denn das Kind ist schon abgemeldet */
+      if (r.zu) { ansichtZu(); return null; }
       if (r.grund) return r;
       /* Firebase kennt niemanden, der Tab aber schon: mit dem gemerkten Code anmelden */
       return gemerkt && S.code() === gemerkt ? ZS.cloud.anmelden(gemerkt) : null;
     }).then(r => {
       if (!r) return;
+      if (r.zu) { ansichtZu(); return; }
       if (r.ok) { if (ansicht === 'start' && darfWechseln()) ansichtStart(); return; }
       /* Die Lehrkraft hat den Code gesperrt: nicht auf dem Gerät weiterüben lassen */
       if (r.grund === ZS.cloud.TEXT.gesperrt && S.aktiv()) { S.abmelden(); if (darfWechseln()) ansichtCode(r.grund); }

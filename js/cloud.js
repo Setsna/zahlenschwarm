@@ -27,7 +27,8 @@
     netz: 'Gerade gibt es kein Internet. Versuch es später noch einmal.',
     oft: 'Das waren zu viele Versuche. Warte kurz und versuch es dann noch einmal.',
     sonst: 'Die Anmeldung hat nicht geklappt. Bitte sag deiner Lehrkraft Bescheid.',
-    unlesbar: 'Dein gespeicherter Stand konnte nicht gelesen werden. Bitte sag deiner Lehrkraft Bescheid.'
+    unlesbar: 'Dein gespeicherter Stand konnte nicht gelesen werden. Bitte sag deiner Lehrkraft Bescheid.',
+    zu: 'Bald offen! Deine Lehrkraft sagt dir, wann es hier losgeht.'   /* Plattform gesperrt (Ingo, 21.11.2026) */
   };
 
   let auth = null, db = null;
@@ -128,7 +129,8 @@
   }
 
   /* ---------- Anmelden ---------- */
-  /* Ergebnis: { ok: true, name, brauchtKlasse, ohneNetz, gespeichert } oder { ok: false, grund }.
+  /* Ergebnis: { ok: true, name, brauchtKlasse, ohneNetz, gespeichert } oder { ok: false, grund }
+     oder { ok: false, zu: true, grund: TEXT.zu }, wenn die Lehrkraft den Zahlenschwarm gesperrt hat.
      gespeichert = false: geöffnet, aber der Speicher des Geräts hat abgelehnt.
      brauchtKlasse: Es gibt noch nirgends einen Stand. Die Seite fragt nach der Klasse und ruft dann klasseWaehlen(). */
   function anmelden(roh) {
@@ -156,6 +158,12 @@
   function ohneNetz(code, e) {
     /* Nicht halb angemeldet zurückbleiben */
     if (e && auth && (e.kindText || !istNetzFehler(e))) auth.signOut().catch(() => {});
+    if (e && e.zu) {
+      /* Plattform gesperrt: Hatte der Tab das Kind schon geöffnet, nur vergessen, wer angemeldet ist. Der Stand bleibt liegen. */
+      if (S.code() === code) S.abmelden();
+      bereit = false; kind = null; wartend = null; nachholen = null;
+      return { ok: false, zu: true, grund: e.kindText };
+    }
     if (e && e.kindText) return { ok: false, grund: e.kindText };
     if (e && !istNetzFehler(e)) {
       const c = e.code;
@@ -169,18 +177,41 @@
     return { ok: true, name: r.kind.name, brauchtKlasse: false, ohneNetz: true, gespeichert: r.ok };
   }
 
-  /* Nach der Anmeldung bei Firebase: Konto prüfen, Stand holen, auf dem Gerät öffnen. */
+  /* Freigabe durch die Lehrkraft (Spec „Plattform-Freigabe“, Etappe 3, 21.11.2026; gleiche Logik wie
+     Lernlagune-Konto\Baukasten\js\konto-cloud.js): Ist der Zahlenschwarm für die Klasse offen? true = offen.
+     Nur ein ausdrückliches false in oeffentlich/plattformen sperrt. Fehler, fehlender Eintrag, kein Netz
+     oder länger als C.cloud.freigabeWarteMs: offen. Gefragt wird beim Server, nicht im Zwischenspeicher. */
+  function freigabeLesen() {
+    if (!C.cloud.freigabe) return Promise.resolve(true);
+    let uhr = null;
+    const frage = Promise.resolve()
+      .then(() => db.collection('oeffentlich').doc('plattformen').get({ source: 'server' }))
+      .then(snap => !(snap && snap.exists && (snap.data() || {})[C.cloud.freigabe] === false), () => true);
+    const genug = new Promise(ok => { uhr = setTimeout(() => ok(true), C.cloud.freigabeWarteMs || 4000); });
+    return Promise.race([frage, genug]).then(offen => { clearTimeout(uhr); return offen; });
+  }
+
+  /* Nach der Anmeldung bei Firebase: Konto prüfen, Freigabe prüfen, Stand holen, auf dem Gerät öffnen. */
   /* stand: Zahl der Abmeldungen, als diese Anmeldung begann. Hat sich das Kind inzwischen abgemeldet,
-     kommt die Antwort zu spät und wird verworfen ({ ok: false } ohne Text). */
-  function nachAnmeldung(code, stand = abmeldungen) {
+     kommt die Antwort zu spät und wird verworfen ({ ok: false } ohne Text).
+     pruefen = false beim stillen Nachholen mit wieder Netz: Die Sperre gilt erst ab dem nächsten Start (Ingo, 21.11.2026).
+     Ein Kind mit testkind: true in kinder/<code> ist nie ausgesperrt. */
+  function nachAnmeldung(code, stand = abmeldungen, pruefen = true) {
     const id = idVon(code);
+    const freigabe = pruefen ? freigabeLesen() : Promise.resolve(true);   /* läuft neben dem Lesen von kinder */
     return db.collection(C.cloud.kinder).doc(id).get().then(snap => {
       if (stand !== abmeldungen) return { ok: false };
       if (!snap.exists) {
         return auth.signOut().catch(() => {}).then(() => { throw { kindText: TEXT.gesperrt }; });
       }
-      const name = String((snap.data() || {}).vorname || '').trim().slice(0, C.nameMaxLaenge) || 'Taucher';
-      return db.collection(C.cloud.stand).doc(id).get().then(st => {
+      const konto = snap.data() || {};
+      const name = String(konto.vorname || '').trim().slice(0, C.nameMaxLaenge) || 'Taucher';
+      return freigabe.then(offen => {
+        if (stand !== abmeldungen) return null;
+        if (!offen && konto.testkind !== true) return auth.signOut().catch(() => {}).then(() => { throw { kindText: TEXT.zu, zu: true }; });
+        return db.collection(C.cloud.stand).doc(id).get();
+      }).then(st => {
+        if (!st) return { ok: false };
         if (stand !== abmeldungen) return { ok: false };
         const fern = st.exists ? st.data() : null;
         if (!fern && !S.vorhanden(code)) {
@@ -291,7 +322,7 @@
         if (e && (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential')) return auth.createUserWithEmailAndPassword(mail, code);
         throw e;
       })
-      .then(() => { if (S.code() === code) return nachAnmeldung(code); })
+      .then(() => { if (S.code() === code) return nachAnmeldung(code, abmeldungen, false); })
       .catch(() => { /* beim nächsten Mal wieder */ });
   }
 

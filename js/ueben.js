@@ -278,15 +278,16 @@
     if (z.index >= z.liste.length) beenden(false);
     else zeigeAufgabe();
   }
-  /* abgebrochen: true bei "Zurück", false wenn eine feste Liste zu Ende ist */
-  function beenden(abgebrochen = true) {
+  /* abgebrochen: true bei "Zurück", false wenn eine feste Liste zu Ende ist.
+     still: ohne Rückkehr-Ansicht (fertig wird nicht gerufen), z. B. wenn das Kind gerade abgemeldet wurde (Plattform gesperrt, 21.11.2026) */
+  function beenden(abgebrochen = true, still = false) {
     if (!z) return;
     clearTimeout(z.weiterTimer); clearTimeout(z.bedenkTimer);
     uhrBuchen();
     const { fertig, ergebnisse, neueFische } = z;
     z = null;
     document.body.classList.remove('uebt');
-    if (fertig) fertig(ergebnisse, abgebrochen, { fische: neueFische });
+    if (fertig && !still) fertig(ergebnisse, abgebrochen, { fische: neueFische });
   }
 
   /* Startet eine Übung. aufgaben: Liste aus ZS.aufgaben. nachschub(): liefert neue Aufgaben (endlos).

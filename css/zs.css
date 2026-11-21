@@ -119,6 +119,10 @@ img { display: block; max-width: 100%; height: auto; }
 .mitte input[type="text"] { margin-top: 0; text-align: center; }
 .mitte .knopfreihe { justify-content: center; }
 
+/* ---------- Plattform gesperrt („Bald offen“, Lehrerbereich des Perlentauchers, 21.11.2026) ---------- */
+.zu h2 { display: flex; align-items: center; justify-content: center; gap: 0.45em; }
+.zu .schloss { flex: none; width: 0.9em; height: 0.9em; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
 /* ---------- Bereiche auf der Startseite ---------- */
 .bereiche-block { width: var(--fenster-breite); display: flex; flex-direction: column; align-items: center; gap: var(--abstand); text-align: center; }
 .abschnitt { font-family: var(--serif); font-weight: 500; font-size: max(26px, calc(56 * var(--s))); color: var(--navy); }

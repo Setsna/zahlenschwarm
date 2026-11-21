@@ -38,6 +38,8 @@ ZS.config = {
     kinder: 'kinder',            /* kinder/<code>: Vorname, von der Lehrkraft angelegt (nur lesen) */
     stand: 'zs_stand',           /* zs_stand/<code>: der Stand dieses Kindes im Zahlenschwarm */
     schreibPauseMs: 2500,        /* so lange nach der letzten Änderung warten, dann gebündelt schreiben */
+    freigabe: 'zahlenschwarm',   /* Schlüssel im Lehrerbereich des Perlentauchers (oeffentlich/plattformen), seit 21.11.2026 */
+    freigabeWarteMs: 4000,       /* höchstens so lange auf die Freigabe warten, dann gilt: offen */
     nochmalMs: 8000,             /* ohne Netz: so lange bis zum nächsten Versuch */
     ladeWarteMs: 8000            /* so lange höchstens auf die Firebase-Skripte warten, dann geht es ohne weiter */
   },
