@@ -38,6 +38,11 @@
   let nachholen = null;         /* Code, der ohne Netz nur auf dem Gerät geöffnet wurde */
   let timer = null;
   let laeuft = null;            /* das Schreiben, das gerade unterwegs ist */
+  /* Zählt die Abmeldungen. Eine Anmeldung, die noch unterwegs ist, während das Kind „Abmelden“ tippt, merkt daran,
+     dass ihre Antwort zu spät kommt. Sie darf das Kind dann nicht wieder anmelden (Fehler bis v=34). */
+  let abmeldungen = 0;
+  /* „Abmelden“ kam, bevor Firebase geladen war: der Code, dessen gemerkte Anmeldung bei Firebase noch zu beenden ist */
+  let abmeldenNachholen = null;
 
   /* Auf dem eigenen Rechner (localhost) spricht die Seite nie mit dem echten Firebase, nur mit der
      Attrappe der Tests. So legt ein Versuch beim Entwickeln kein echtes Konto an. */
@@ -97,9 +102,10 @@
   }
 
   function start() {
-    return ladenAbwarten().then(() => einrichten() ? gemerkteAnmeldung() : { ok: false });
+    const stand = abmeldungen;
+    return ladenAbwarten().then(() => einrichten() ? gemerkteAnmeldung(stand) : { ok: false });
   }
-  function gemerkteAnmeldung() {
+  function gemerkteAnmeldung(stand) {
     return new Promise(fertig => {
       /* Firebase meldet den Anmeldezustand mehrfach. Nur die erste Meldung zählt hier. */
       let erledigt = false;
@@ -107,8 +113,16 @@
         if (erledigt) return;
         erledigt = true;
         const code = user && user.email ? S.codePruefen(user.email.split('@')[0]) : null;
+        if (stand !== abmeldungen) {
+          /* Das Kind hat sich abgemeldet, während die Seite noch lud. Die Anmeldung, die Firebase sich gemerkt hat,
+             wird jetzt beendet, sonst käme das Kind beim nächsten Öffnen von selbst wieder hinein. */
+          if (code && code === abmeldenNachholen) auth.signOut().catch(() => {});
+          abmeldenNachholen = null;
+          fertig({ ok: false });
+          return;
+        }
         if (!code) { fertig({ ok: false }); return; }
-        nachAnmeldung(code).then(fertig, e => fertig(ohneNetz(code, e)));
+        nachAnmeldung(code, stand).then(fertig, e => fertig(stand !== abmeldungen ? { ok: false } : ohneNetz(code, e)));
       });
     });
   }
@@ -125,14 +139,17 @@
   }
   function beiFirebaseAnmelden(code) {
     const mail = mailVon(code);
+    const stand = abmeldungen;
+    /* Eine neue Anmeldung geht vor: Es gibt nichts mehr nachträglich abzumelden. */
+    abmeldenNachholen = null;
     return auth.signInWithEmailAndPassword(mail, code)
       .catch(e => {
         /* Beim allerersten Anmelden gibt es das Konto noch nicht. */
         if (e && (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential')) return auth.createUserWithEmailAndPassword(mail, code);
         throw e;
       })
-      .then(() => nachAnmeldung(code))
-      .catch(e => ohneNetz(code, e));
+      .then(() => nachAnmeldung(code, stand))
+      .catch(e => stand !== abmeldungen ? { ok: false } : ohneNetz(code, e));
   }
 
   /* Wenn die Anmeldung scheitert: Liegt es am Netz und kennt das Gerät den Code, geht es auf dem Gerät weiter. */
@@ -153,14 +170,18 @@
   }
 
   /* Nach der Anmeldung bei Firebase: Konto prüfen, Stand holen, auf dem Gerät öffnen. */
-  function nachAnmeldung(code) {
+  /* stand: Zahl der Abmeldungen, als diese Anmeldung begann. Hat sich das Kind inzwischen abgemeldet,
+     kommt die Antwort zu spät und wird verworfen ({ ok: false } ohne Text). */
+  function nachAnmeldung(code, stand = abmeldungen) {
     const id = idVon(code);
     return db.collection(C.cloud.kinder).doc(id).get().then(snap => {
+      if (stand !== abmeldungen) return { ok: false };
       if (!snap.exists) {
         return auth.signOut().catch(() => {}).then(() => { throw { kindText: TEXT.gesperrt }; });
       }
       const name = String((snap.data() || {}).vorname || '').trim().slice(0, C.nameMaxLaenge) || 'Taucher';
       return db.collection(C.cloud.stand).doc(id).get().then(st => {
+        if (stand !== abmeldungen) return { ok: false };
         const fern = st.exists ? st.data() : null;
         if (!fern && !S.vorhanden(code)) {
           /* Ganz neu: Erst die Klasse, dann wird der Stand angelegt. */
@@ -278,11 +299,16 @@
   /* Schreibt vorher noch einmal. Der Stand bleibt auf dem Gerät liegen (für Zeiten ohne Netz). */
   function abmelden() {
     clearTimeout(timer);
+    /* Ab jetzt kommt jede Anmeldung, die noch unterwegs ist, zu spät (siehe nachAnmeldung). */
+    abmeldungen++;
     const fertig = () => {
+      const code = S.code();
       bereit = false; kind = null; wartend = null; nachholen = null;
       S.abmelden();
       melden('ok');
-      return auth ? auth.signOut().catch(() => {}) : undefined;
+      /* Firebase noch nicht geladen: Die gemerkte Anmeldung wird beendet, sobald es da ist (gemerkteAnmeldung). */
+      if (!auth) { abmeldenNachholen = code; return undefined; }
+      return auth.signOut().catch(() => {});
     };
     return (bereit ? schreiben().catch(() => {}) : Promise.resolve()).then(fertig);
   }
