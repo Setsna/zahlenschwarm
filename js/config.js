@@ -46,7 +46,7 @@ ZS.config = {
   klasseStandard: 3,
 
   /* Versionsnummer der Bilder, getrennt von ?v=N für js und css. */
-  bildStand: 3,
+  bildStand: 4,
 
   /* Inhalte Klasse 3 (Festlegung Ingo, 10.11.2026; der Lehrplan nennt für Kl. 3 nichts eigenes) */
   faktoren: { min: 1, max: 10 },          /* keine Aufgaben mit 0 */

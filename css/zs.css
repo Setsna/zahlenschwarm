@@ -30,10 +30,10 @@ img { display: block; max-width: 100%; height: auto; }
 .grund {
   position: fixed; inset: 0; z-index: -3;
   /* Ersatz, solange das Bild lädt: oben hell, damit Navy sofort lesbar ist */
-  background: url(../bilder/grund-hoch.webp?b=3) 50% 0 / cover no-repeat, var(--grund-ersatz);
+  background: url(../bilder/grund-hoch.webp?b=4) 50% 0 / cover no-repeat, var(--grund-ersatz);
 }
 @media (orientation: landscape) {
-  .grund { background-image: url(../bilder/grund-quer.webp?b=3), var(--grund-ersatz); }
+  .grund { background-image: url(../bilder/grund-quer.webp?b=4), var(--grund-ersatz); }
 }
 .licht {
   position: fixed; z-index: -2; pointer-events: none;
